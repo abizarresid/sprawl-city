@@ -43,7 +43,58 @@ Then open <http://localhost:8123>, or <http://localhost:8123/?mute> to start wit
 
 ---
 
-## 2zz14. Latest update (build 96): exits that fit the moment, a gentler airliner rule, a little less acceleration
+## 2zz15. Latest update (build 97): why it ran hot and looked blurry, gore on bodies, contracts rewritten
+
+**Performance investigation** (measured with `renderer.info` at the start position):
+- **Before:**
+  - about 1,780 draw calls and 6.2M triangles on frames where the shadow map redrew (every 2nd frame);
+  - 1,230 calls and 4.3M triangles otherwise.
+- **Where it went:**
+  - city chunks: 2.3M triangles, 273 calls;
+  - standalone meshes: 0.7M;
+  - instanced props: 0.7M;
+  - characters: 302 calls;
+  - cars: 198 calls.
+- Static geometry merges into 352 m tiles, so distance culling is coarse. Fog (and therefore the draw distance) reached 1,300 m.
+- **Blur:** medium quality rendered at pixel ratio 1.0 on a 2× Retina screen, with dynamic resolution allowed down to 0.75. The game ran at 0.75× and was upscaled about 2.7×.
+
+**What changed:**
+- **Draw distance:** fog and draw distance capped by quality (`drawDist97`: low 600, medium 850, high 1250 m; +1600 in the air).
+- **Shadows:**
+  - detail chunks never cast shadows, and other chunks only within 240 m (`updatePerf97`);
+  - static shadows redraw every 3rd frame instead of every 2nd;
+  - detail chunks are drawn out to 200 m on medium (was 320).
+- **Characters:** full detail out to 34 m (peds) / 42 m (others), was 48/56; the stand-in takes over past that.
+- **Resolution:**
+  - medium: pixel ratio 1.3, floor 1.0, no MSAA;
+  - high: 2.0, floor 1.25, MSAA 2;
+  - low: 1.0, floor 0.85.
+  - A light 4-tap sharpen in the grade pass (`uSharp` 0.2, 0.12 on low).
+- **Battery saver:** a new setting caps the game at 40 fps (`settings.cool97`).
+- **After:** about 1,420 calls / 5.3M (shadow frames) and 1,000 calls / 3.7M otherwise; averages 1,150 calls and 4.2M triangles per frame, down 24% and 20%. The sharper resolution adds pixel work back, so the battery saver is the strongest cooling lever.
+- **Deeper fix still open:** simplified far versions of the city chunks (LOD), since building geometry is the bulk of what's drawn.
+
+**Gore on bodies already down (`corpseGore97`):**
+- Melee swings at a body (knife, katana, machete or chainsaw strongest; bat; fists lightest) when nobody alive is in front of you.
+- Cars running over or shoving a body.
+- Every blast within 90% of its radius (heavy ones dismember).
+- Aimed shots catch a body from further away (6 m) and higher (1.25 m aim height).
+- Each hit adds a blood spray and a pool, and severs limbs above power 0.5.
+
+**Street contracts (`SC97`, replacing SC90):**
+- **Pace:** a new offer every 7–12 game hours, at most 2 waiting. The old instant-refill kind is gone.
+- **Writing:** a fixer's terse brief (name, reason, routine, the condition, the disposal, the fee).
+- **Targets live a day (`routineAnchor97`):**
+  - out on foot near their day area (8:00–19:00);
+  - on their own doorstep smoking (19:00–23:00);
+  - inside their house (23:00–8:00).
+  - They spawn only out of sight and keep their routine. Scared, they run (no teleporting home). If they run off and get culled, they're back on their routine an hour later.
+- **Disposal is required.** Each contract names a person (Rudy behind the chop shop, Dutch at Havenport's container quay, Marco in the alley behind a bar) or a place (the crusher at Kessler Salvage, the end of Havenport's middle pier, the hunters' cabin fireplace).
+  - Drop the body within 4.5 m of the person (9 m of the place), or stop a car with it in the trunk there for 1.5 s.
+  - Destroying the body any other way also counts.
+- **Pay:** 3,000–5,500 base, up to 2.6× for distance (far jobs pay more); 1.5× if the condition is met; half if the body is found first or left for a game day.
+
+## 2zz14. Update (build 96): exits that fit the moment, a gentler airliner rule, a little less acceleration
 
 **Getting out of things (`EX96`, `exitCar` / `exitPlane` wrappers; the last move is in `EX96.last`):**
 

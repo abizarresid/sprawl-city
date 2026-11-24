@@ -338,7 +338,7 @@
 
 <div id="start" class="screen">
   <h1>SPRAWL CITY</h1>
-  <div class="sub">OPEN-WORLD CRIME SANDBOX · SINGLE PLAYER · BUILD 96 (Nov 23)</div>
+  <div class="sub">OPEN-WORLD CRIME SANDBOX · SINGLE PLAYER · BUILD 97 (Nov 23)</div>
   <div class="keys">
     <div><kbd>WASD</kbd> move · <kbd>Shift</kbd> sprint</div><div><kbd>Mouse</kbd> look (captured while playing)</div>
     <div><kbd>LMB</kbd> shoot / punch · <kbd>RMB</kbd> aim</div><div><kbd>V</kbd> kick · <kbd>R</kbd> reload</div>
@@ -364,6 +364,7 @@
     <div class="setrow"><label><input id="forgive" type="checkbox"> Forgiving aim (shots that pass close to someone still hit them). Off: precise free aim, a miss is a miss</label></div>
     <div class="setrow"><label><input id="snapCover" type="checkbox"> Snap to cover (crouch beside a wall or a car to stick to it)</label></div>
     <div class="setrow"><label><input id="gore" type="checkbox"> Gore (heads and limbs can come off)</label></div>
+    <div class="setrow"><label><input id="cool97" type="checkbox"> Battery saver: cap at 40 fps (runs cooler and quieter)</label></div>
     <div class="setrow"><label><input id="planeTake96" type="checkbox"> Let me take the shuttle airliner (on the ground only; the crew try to stop you)</label></div>
     <div class="setrow">Graphics <select id="gfx"><option value="low">Low (fastest)</option><option value="medium">Medium</option><option value="high">High (ambient occlusion)</option></select> <span id="fpsV"></span></div>
     <div class="btns"><button id="resumeBtn" class="btn primary">RESUME</button><button id="resetBinds" class="btn">RESET CONTROLS</button></div>
@@ -13616,7 +13617,7 @@ function cullChunks(dt) {   // building chunks past the fog aren't drawn: you ca
   if ((CHUNKCULL.t -= dt) > 0) return; CHUNKCULL.t = 0.25;
   if (!CHUNKCULL.list) { CHUNKCULL.list = []; for (const m of scene.children) if (m.isMesh && m.userData.chunk) { if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere(); CHUNKCULL.list.push(m); } }
   const cx = camera.position.x, cz = camera.position.z, far = scene.fog ? scene.fog.far * 1.06 : 4500;
-  const dfar = Math.min(far, player && player.inPlane ? 420 : 320);   // build 80: details past ~320 m are a few pixels each: not worth the heat
+  const dfar = Math.min(far, player && player.inPlane ? 420 : settings.gfx === 'high' ? 320 : settings.gfx === 'low' ? 150 : 200);   // build 97: details nearer in   // build 80: details past ~320 m are a few pixels each: not worth the heat
   for (const m of CHUNKCULL.list) { const S = m.geometry.boundingSphere, v = Math.hypot(S.center.x - cx, S.center.z - cz) - S.radius < (m.userData.detail ? dfar : far); if (m.visible !== v) m.visible = v; }
 }
 const FARCULL = { list: [], seen: new WeakSet(), t: 0, scanT: 0, box: new THREE.Box3(), sph: new THREE.Sphere() };
@@ -13946,7 +13947,7 @@ renderPhone = function () {   // eslint-disable-line no-func-assign
 };
 (() => { const st = document.createElement('style'); st.textContent = '#phone .bd { scroll-behavior: auto !important; } #phone { max-height: calc(100vh - 32px) !important; }'; document.head.appendChild(st); })();
 
-function updateBuild66(dt) { updateIDoors(dt); updateSleepers(dt); houseWinGround(); updateCopHud(dt); homeLife(dt); updateHomeGlow(dt); updateBuild67(dt); updateBuild68(dt); updateBuild69(dt); updateBuild69b(dt); updateBuild70(dt); updateBuild71(dt); updateBuild74(dt); updateBuild75(dt); updateBuild76(dt); updateBuild77(dt); updateBuild79(dt); updateBuild81(dt); updateBuild81b(dt); updateBuild82(dt); updateDispatch83(); updateBuild84(dt); updateBuild85(dt); updateBuild86(dt); updateBuild87(dt); updateBuild88(dt); updateBuild89(dt); updateBuild90(dt); updateBuild91(dt); updateBuild92(dt); updateBuild93(dt); updateBuild94(dt); updateBuild95(dt); updateBuild96(dt); }
+function updateBuild66(dt) { updateIDoors(dt); updateSleepers(dt); houseWinGround(); updateCopHud(dt); homeLife(dt); updateHomeGlow(dt); updateBuild67(dt); updateBuild68(dt); updateBuild69(dt); updateBuild69b(dt); updateBuild70(dt); updateBuild71(dt); updateBuild74(dt); updateBuild75(dt); updateBuild76(dt); updateBuild77(dt); updateBuild79(dt); updateBuild81(dt); updateBuild81b(dt); updateBuild82(dt); updateDispatch83(); updateBuild84(dt); updateBuild85(dt); updateBuild86(dt); updateBuild87(dt); updateBuild88(dt); updateBuild89(dt); updateBuild90(dt); updateBuild91(dt); updateBuild92(dt); updateBuild93(dt); updateBuild94(dt); updateBuild95(dt); updateBuild96(dt); updateBuild97(dt); }
 // ═════════ Build 66: three police forces, each marked. Sprawl City PD in the city, Havenport PD in Havenport,
 //   the Highway Patrol everywhere in between: their own uniforms, their own cars, their own radio ═════════
 const COPB = {
@@ -20676,6 +20677,190 @@ damageChar = function (c, dmg, src, dx = 0, dz = 0) {   // eslint-disable-line n
   return _dc96(c, dmg, src, dx, dz);
 };
 function updateBuild96(dt) { updateExit96(dt); settingsUI96(); }
+// ═════════ Build 97: a cooler, sharper picture (draw distance by quality, far buildings out of the shadow pass, crisper
+//   resolution, a light sharpen), gore from bodies that are already down, and street contracts rewritten: fewer, written
+//   like a fixer, a target who lives a day (out on foot, home in the evening, in bed at night), and a body you have to get
+//   rid of the way you're told: a named man who takes it, or a named place ═════════
+
+// ── performance ──
+const PERF97 = { t: 0, list: null, keep: null, ui: false };
+function drawDist97() { const g = settings.gfx; return g === 'high' ? 1250 : g === 'low' ? 600 : 850; }
+function updatePerf97(dt) {
+  if ((PERF97.t -= dt) > 0) return; PERF97.t = 0.4;
+  if (!PERF97.list) { PERF97.keep = new Set(HAVEN.meshes); PERF97.list = scene.children.filter((m) => m.isMesh && !PERF97.keep.has(m) && m.geometry); }
+  const cp = camera.position, air = player && (player.inPlane || player.sky), far = drawDist97() + (air ? 1600 : 0), sh = 240;
+  for (const m of PERF97.list) {
+    const g = m.geometry; if (!g.boundingSphere) g.computeBoundingSphere(); const bs = g.boundingSphere; if (bs.radius > 1500) continue;   // the ground, the sea, the sky
+    const d = Math.hypot(bs.center.x - cp.x, bs.center.z - cp.z) - bs.radius;
+    if (m.userData.chunk || m.userData.far97 !== undefined || d > far) { const v = d < far; if (m.userData.far97 !== v) { m.userData.far97 = v; m.visible = v; } }   // out past the haze: not drawn at all
+    if (m.userData.chunk) m.castShadow = !m.userData.detail && d < sh;   // only what's near casts into the shadow map, and never the small details
+  }
+  if (grade.uniforms.uTexel) { const pr = renderer.getPixelRatio(); grade.uniforms.uTexel.value.set(1 / (innerWidth * pr), 1 / (innerHeight * pr)); grade.uniforms.uSharp.value = settings.gfx === 'low' ? 0.12 : 0.2; }
+  if (!PERF97.ui) { const el = document.getElementById('cool97'); if (el) { PERF97.ui = true; el.checked = !!settings.cool97; el.addEventListener('change', (e) => { settings.cool97 = e.target.checked; saveSettings(); }); } }
+}
+const _udn97 = updateDayNight;
+updateDayNight = function (dt) {   // eslint-disable-line no-func-assign
+  _udn97(dt);
+  const air = player && (player.inPlane || player.sky), lim = drawDist97() * 0.92 + (air ? 1600 : 0);
+  if (scene.fog.far > lim) { scene.fog.far = lim; scene.fog.near = lim * 0.3; }
+};
+
+// ── bodies that are already down: shots, blades, boots, tyres and blasts still do damage you can see ──
+function corpseGore97(c, power, dx, dz, how) {
+  if (!c || c.alive || c.remove || c.inTrunk || c.carried) return;
+  corpseHit(c, dx, dz, power);
+  emit(c.x, (c.y || 0) + 0.35, c.z, 8 + Math.round(power * 8), 0x7a0e0e, { speed: 2.4 + power, life: 0.55, size: 0.09, g: -9, up: 1.2 });
+  if (Math.random() < 0.6) addDecal(c.x + rand(-0.5, 0.5), c.z + rand(-0.5, 0.5), rand(0.25, 0.5) * (0.8 + power * 0.3), 0x3d0505, 3);
+  if (settings.gore && power > 0.5) goreCorpse(c, power, dx, dz);
+  c.marks97 = (c.marks97 || 0) + 1;
+  if (how === 'car' && c.rag) ragImpulse(c, dx * 4, 1.5, dz * 4, 1);
+}
+const CG97 = { t: 0 };
+function updateCorpseGore97(dt) {
+  if ((CG97.t -= dt) > 0) return; CG97.t = 0.1;
+  const P = player;
+  for (const car of cars) {   // running over a body
+    if (car.T.boat || Math.abs(car.vF) < 4 || car.wrecked) continue;
+    for (const c of chars) {
+      if (c.alive || c.remove || c.inTrunk || c.carried || Math.abs(c.x - car.x) > 3.5 || Math.abs(c.z - car.z) > 3.5) continue;
+      const fx = Math.sin(car.angle), fz = Math.cos(car.angle), dx = c.x - car.x, dz = c.z - car.z, lon = dx * fx + dz * fz, lat = dx * fz - dz * fx;
+      if (Math.abs(lon) > car.T.len / 2 + 0.6 || Math.abs(lat) > car.T.w / 2 + 1.4 || (c.run97 || 0) > clock) continue;   // bodies get shoved aside: the wheels still catch them
+      c.run97 = clock + 0.5; corpseGore97(c, 1 + Math.abs(car.vF) / 12, fx, fz, 'car'); car.vF *= 0.94;
+      if (car.driver === P) { shake += 0.15; sfx.punch && sfx.punch(0.6); }
+    }
+  }
+}
+const _pn97 = punch;
+punch = function (c, W, dmgMul) {   // eslint-disable-line no-func-assign
+  if (c === player && !player.inCar) {   // a swing at someone who's already gone
+    const fx = Math.sin(c.angle), fz = Math.cos(c.angle); let t = null, bd = 1.7;
+    const live = chars.some((o) => o !== c && o.alive && !o.inCar && Math.hypot(o.x - c.x, o.z - c.z) < 1.8 && ((o.x - c.x) * fx + (o.z - c.z) * fz) > 0);
+    if (!live) for (const o of chars) { if (o.alive || o.remove || o.inTrunk || o.carried) continue; const d = Math.hypot(o.x - c.x, o.z - c.z); if (d < bd && ((o.x - c.x) * fx + (o.z - c.z) * fz) / (d || 1) > 0.2) { bd = d; t = o; } }
+    if (t) { const blade = ['knife', 'katana', 'machete', 'chainsaw'].includes(c.weapon), heavy = c.weapon === 'bat'; setTimeout(() => corpseGore97(t, blade ? 1.4 : heavy ? 1.1 : 0.45, fx, fz, 'melee'), 160); }
+  }
+  return _pn97(c, W, dmgMul);
+};
+const _ea97 = explodeAt;
+explodeAt = function (x, z, o = {}) {   // eslint-disable-line no-func-assign
+  _ea97(x, z, o);
+  const R = (o.radius ?? 7) * 0.9;
+  for (const c of chars) { if (c.alive || c.remove || c.inTrunk || c.carried) continue; const d = Math.hypot(c.x - x, c.z - z); if (d > R) continue; const a = Math.atan2(c.x - x, c.z - z), k = 1 - d / R; corpseGore97(c, 1 + k * 2, Math.sin(a) * (1 + k * 3), Math.cos(a) * (1 + k * 3), 'blast'); if (k > 0.5 && settings.gore) goreCorpse(c, 2, Math.sin(a), Math.cos(a)); }
+};
+
+// ── street contracts, rewritten ──
+const SC97 = { next: 0, n: 0, told: false, cleaners: new Map() };
+const WHY97 = [
+  'has been talking to a detective', 'owes the wrong people forty grand', 'skimmed from a card game he was paid to run', 'saw a car get loaded at the docks',
+  'is about to testify', 'won\'t sell his bar', 'sold a crew out to a rival', 'has been sleeping with a client\'s wife', 'kept a ledger he shouldn\'t have',
+];
+const COND97 = [
+  { k: 'quiet', t: 'No witnesses.', ok: (c) => c.killEv && c.killEv.wits.length === 0 },
+  { k: 'accident', t: 'Make it look like an accident: a car, a fall, a fire.', ok: (c) => c.killEv && (c.killEv.weapon === 'car' || c.charred87 || c.burn87 || c.fell90) },
+  { k: 'blade', t: 'A blade. They want it personal.', ok: (c) => c.killEv && ['knife', 'katana', 'machete', 'tknife', 'chainsaw'].includes(c.killEv.weapon) },
+  { k: 'clean', t: 'No prints, no face on a camera.', ok: (c) => c.killEv && !c.killEv.prints && (c.killEv.masked || !c.killEv.room) },
+];
+function sites97() {   // where a body goes, and who takes it
+  const L = [];
+  if (landmarks.chop) L.push({ k: 'person', who: 'Rudy', x: landmarks.chop.x + 5, z: landmarks.chop.z + 4, place: 'round the back of the Port Sprawl chop shop', line: 'He\'ll have the car crusher warmed up.' });
+  if (PL89.chops[1]) L.push({ k: 'place', x: PL89.chops[1].x + 8, z: PL89.chops[1].z + 6, place: 'the crusher at Kessler Salvage, past Pinewood', line: 'Drop it in the yard by the crusher. Nobody goes through the scrap.' });
+  L.push({ k: 'place', x: -4528, z: 136, place: 'the end of the middle pier in Havenport', line: 'Weigh it and roll it off the end. It\'s deep there.' });
+  L.push({ k: 'person', who: 'Dutch', x: HAVEN.x0 + 14, z: HAVEN.z0 + 11.2 * B, place: 'the container yard on Havenport\'s south quay', line: 'He\'ll put it in a box that\'s sailing tonight.' });
+  if (FIREPLACES[0]) L.push({ k: 'place', x: FIREPLACES[0].x, z: FIREPLACES[0].z, place: 'the fireplace in the hunters\' cabin in the hills', line: 'Light it and stay till it\'s ash.' });
+  const bar = bars.find((b) => b.room && b.name); if (bar) L.push({ k: 'person', who: 'Marco', x: bar.room.x1 + 2.5, z: bar.room.cz, place: `the alley behind ${bar.name}`, line: 'He\'ll be in the alley with the van. Don\'t make him wait.' });
+  return L;
+}
+function routineAnchor97(S) {   // where they are at this hour: out on foot by day, outside their door in the evening, inside at night
+  const h = gameHour, H = S.home;
+  if (h >= 8 && h < 19) return { ph: 'day', x: S.day.x, z: S.day.z };
+  if (h >= 19 && h < 23) return { ph: 'eve', x: H.door.cx, z: H.door.cz - H.door.dir * 1.4 };
+  return { ph: 'night', x: H.room.cx, z: H.room.cz };
+}
+function makeSC97() {
+  const P = player, H = homes.filter((h) => h.door && h.room && !h.safe && !h.mayor && h.room.cx !== undefined); if (!H.length) return null;
+  const home = pick(H), fem = Math.random() < 0.4, name = `${pick(fem ? VN79.f : VN79.m)} ${pick(VN79.l)}`, cond = pick(COND97), site = pick(sites97()), why = pick(WHY97);
+  let day = null; for (let k = 0; k < 30 && !day; k++) { const a = rand(0, 6.28), r = rand(50, 160), x = home.door.cx + Math.sin(a) * r, z = home.door.cz + Math.cos(a) * r; if (!collideCircle({ x, z }, 0.4) && !inWater(x, z) && !interiorAt(x, z)) day = { x, z }; }
+  if (!day) day = { x: home.door.cx, z: home.door.cz - home.door.dir * 3 };
+  const dist = Math.hypot(home.room.cx - P.x, home.room.cz - P.z), far = dist > 1500, pay = Math.round((randi(30, 55) * 100) * (1 + clamp(dist / 1800, 0, 1.6)) / 100) * 100;
+  const id = 'sc97_' + (++SC97.n), dayRoad = locationName(day.x, day.z), homeRoad = locationName(home.door.cx, home.door.cz).road;
+  const C = {
+    id, title: name, reward: pay, base97: pay, sc97: true, cond, site, fem97: fem,
+    brief: () => `${name} ${why}. Days ${fem ? 'she' : 'he'}'s out on foot round ${dayRoad.road}${dayRoad.area ? ' in ' + dayRoad.area : ''}. Home on ${homeRoad} by seven, smokes on the step till about eleven, then lights out. ${cond.t} After: ${site.k === 'person' ? `<b>${site.who}</b>, ${site.place}. ${site.line}` : `<b>${site.place}</b>. ${site.line}`} <b>$${pay.toLocaleString('en-US')}</b>${far ? ', a bit extra for the drive' : ''}, half again if it's done the way they asked. Leave the body lying and you get half.`,
+    accept: () => `${name}. Clean, then ${site.k === 'person' ? site.who : 'the drop'}. Text me when it's done.`,
+    where: (S) => (S.phase === 'dispose' ? { x: site.x, z: site.z } : S.c && S.c.alive ? { x: S.c.x, z: S.c.z } : routineAnchor97(S)),
+    start: (S) => { Object.assign(S, { home, day, phase: 'hunt', c: null, lay: 0, body: null, found: false }); },
+    tick: (S, dt) => tickSC97(C, S, dt),
+    cleanup: (S) => { if (S.c && S.c.alive) S.c.remove = true; if (S.cleaner) S.cleaner.remove = true; },
+  };
+  return C;
+}
+function tickSC97(C, S, dt) {
+  const P = player;
+  if (S.phase === 'hunt') {
+    const A = routineAnchor97(S);
+    if (S.c && !S.c.alive) { S.body = S.c; S.phase = 'dispose'; S.ok = C.cond.ok(S.c); phoneText('V.', `Saw the news coming. Now the body: ${C.site.k === 'person' ? `<b>${C.site.who}</b>, ${C.site.place}` : `<b>${C.site.place}</b>`}. Carry it, drag it or put it in a trunk.`); return; }
+    if (S.c && (S.c.remove || !S.c.alive && S.c.remove)) { S.c = null; S.lay = gt() + 1; }   // ran off and lost themselves: back on their routine in an hour
+    if (S.c && S.c.alive) {
+      const c = S.c, d = Math.hypot(c.x - P.x, c.z - P.z);
+      if (d > 330 && hiddenFromPlayer(c.x, c.z) && CALM.has(c.state)) { c.remove = true; S.c = null; return; }
+      if (c.state === 'flee' || c.state === 'cower' || c.state === 'call') return;   // scared: let them run; no teleporting home
+      if (A.ph !== c.ph97) {   // the hour turned: head to where the day takes them
+        c.ph97 = A.ph; if (A.ph === 'day') { c.state = 'walk'; try { reacquireBlock(c); } catch (e) { c.state = 'idle'; c.homeGo = { x: A.x, z: A.z, a: 0 }; } }
+        else { c.state = 'idle'; c.homeGo = { x: A.x, z: A.z, a: 0 }; c.idleStyle = A.ph === 'eve' ? 'smoke' : undefined; }
+      }
+      if (A.ph === 'day' && c.state === 'idle' && !c.homeGo && Math.random() < dt * 0.05) { c.state = 'walk'; try { reacquireBlock(c); } catch (e) { const a = rand(0, 6.28); c.homeGo = { x: S.day.x + Math.sin(a) * 30, z: S.day.z + Math.cos(a) * 30, a: 0 }; c.state = 'idle'; } }
+      return;
+    }
+    if (gt() < S.lay) return;
+    if (Math.hypot(A.x - P.x, A.z - P.z) < 200 && (hiddenFromPlayer(A.x, A.z) || A.ph === 'night')) {
+      const c = createChar('ped', A.x, A.z, { style: pick(['business', 'casual', 'street']), fem: C.fem97 }); c.y = groundY(c.x, c.z);
+      Object.assign(c, { ctarget: true, keep79: true, sc97: C, ph97: A.ph, t: 9999, vid79: { name: C.title, age: randi(28, 60), named: true }, title: undefined });
+      if (A.ph === 'day') { c.state = 'walk'; try { reacquireBlock(c); } catch (e) { c.state = 'idle'; } } else { c.state = 'idle'; c.idleStyle = A.ph === 'eve' ? 'smoke' : undefined; c.idleAngle = rand(0, 6.28); }
+      S.c = c;
+    }
+    return;
+  }
+  // the body
+  const site = C.site, B = S.body;
+  if (B && B.found && !S.found) { S.found = true; phoneText('V.', 'They found him before you moved him. That\'s half.'); }
+  if (site.k === 'person' && Math.hypot(site.x - P.x, site.z - P.z) < 150 && (!S.cleaner || S.cleaner.remove || !S.cleaner.alive)) {
+    const w = createChar('ped', site.x, site.z, { style: 'street', fem: false }); Object.assign(w, { state: 'idle', t: 9999, keep79: true, ctarget: true, title: site.who, idleStyle: 'smoke', idleAngle: rand(0, 6.28) }); S.cleaner = w;
+  }
+  const at = site.k === 'person' ? S.cleaner : { x: site.x, z: site.z }; if (!at) return;
+  const R = site.k === 'person' ? 4.5 : 9, held = P.carry === B || P.drag === B, car = P.inCar, trunk = car && car.trunk && car.trunk.includes(B);
+  const dPl = Math.hypot(at.x - P.x, at.z - P.z), dB = B ? Math.hypot(at.x - B.x, at.z - B.z) : 99;
+  S.stopT = trunk && Math.abs(car.vF) < 1 && dPl < R + 6 ? (S.stopT || 0) + dt : 0;
+  const dropped = B && !held && !trunk && !B.inTrunk && !B.remove && dB < R, viaTrunk = S.stopT > 1.5;
+  const gone = B && (B.destroyed86 || B.sinkT > 0);
+  S.prompt = (held && dPl < R + 4) ? (site.k === 'person' ? `Drop the body by ${site.who}` : 'Drop the body here') : (trunk && dPl < R + 10) ? `Stop the car: ${site.k === 'person' ? site.who + ' takes it out of the trunk' : 'you tip it out of the trunk'}` : null;
+  if ((dropped || viaTrunk || gone) && !S.done) {
+    S.done = true;
+    if (viaTrunk) { const tr = car.trunk; tr.splice(tr.indexOf(B), 1); B.inTrunk = null; B.inCar = null; }
+    if (!gone) { B.remove = true; B.destroyed86 = true; if (site.k === 'person' && S.cleaner) say(S.cleaner, pick(['Got it. Go.', 'Never saw you.', 'Heavier than he looked.']), 2); }
+    const half = S.found, pay = Math.round(C.base97 * (half ? 0.5 : S.ok ? 1.5 : 1) / 100) * 100; C.reward = pay;
+    completeContract(C, half ? `Done, but they found him first. <b>$${pay.toLocaleString('en-US')}</b>.` : S.ok ? `Clean, and how they wanted it. <b>$${pay.toLocaleString('en-US')}</b>.` : `Done. Not quite how they asked: <b>$${pay.toLocaleString('en-US')}</b>.`);
+    if (S.cleaner) { const w = S.cleaner; setTimeout(() => { if (w.alive) w.remove = true; }, 8000); }
+    setTimeout(() => { const i = CONTRACTS.indexOf(C); if (i >= 0) CONTRACTS.splice(i, 1); }, 30000);
+  }
+  if (!S.done && B && !B.found && gt() > (S.deadline || (S.deadline = gt() + 24))) { S.found = true; phoneText('V.', 'A day and he\'s still lying there. Half.'); }
+}
+const _cpp97 = computePrompt;
+computePrompt = function () {   // eslint-disable-line no-func-assign
+  const b = _cpp97(), C = CONTRACT.active; if (C && C.sc97 && C.state && C.state.prompt && !b) return C.state.prompt;
+  return b;
+};
+function updateSC97(dt) {
+  const now = gt();
+  for (let i = CONTRACTS.length - 1; i >= 0; i--) if (CONTRACTS[i].sc90 && CONTRACT.active !== CONTRACTS[i]) CONTRACTS.splice(i, 1);   // the old kind
+  if (!SC97.next) SC97.next = now + rand(2, 4);
+  if (now < SC97.next) return;
+  const open = CONTRACTS.filter((C) => C.sc97 && !C.done && CONTRACT.active !== C).length;
+  SC97.next = now + rand(7, 12);   // roughly one new job every eight to twelve hours of game time
+  if (open >= 2) return;
+  const C = makeSC97(); if (!C) return; CONTRACTS.push(C);
+  phoneText('V.', pick([`Got something. ${C.title}. It's in Contracts.`, `Work if you want it. ${C.title}. Details in the app.`, `New name for you: ${C.title}. Read it before you say yes.`]));
+}
+updateSC90 = function () {};   // eslint-disable-line no-func-assign
+function updateBuild97(dt) { updatePerf97(dt); updateCorpseGore97(dt); updateSC97(dt); }
 const ARM = { truck: null, nextT: 50 };
 const truckRear = (car) => { const fx = Math.sin(car.angle), fz = Math.cos(car.angle), o = car.T.len / 2 + 0.55; return { x: car.x - fx * o, z: car.z - fz * o }; };
 function addTruckDoors(car) {   // two rear doors on hinges, so they can swing open
@@ -22640,7 +22825,7 @@ function animChar(c, dt) {
   m.position.set(c.x, c.y + A.air + c.jumpY + FOOT_LIFT, c.z); m.rotation.y = c.angle; if (m.rotation.z || m.rotation.x) m.rotation.x = m.rotation.z = 0;   // soles on the ground, not 5 cm into it; upright again after a ragdoll
   m.visible = !c.inCar && !c.inPlane && c.visibleDist && !(c === player && c.scoped);
   if (!m.visible) return;
-  const far = c !== player && d2(c.x, c.z, camera.position.x, camera.position.z) > (c.kind === 'ped' ? 48 * 48 : 56 * 56);   // fully animated out to ~50 m (build 62: was 65; the stand-in takes over sooner): no statues gliding about
+  const far = c !== player && d2(c.x, c.z, camera.position.x, camera.position.z) > (c.kind === 'ped' ? 34 * 34 : 42 * 42);   // fully animated out to ~50 m (build 62: was 65; the stand-in takes over sooner): no statues gliding about
   if (far !== c.lodOn) { c.lodOn = far; rg.body.visible = !far; c.lod.visible = far; }
   if (far) {
     if (c.alive) { if (c.speed > 0.1) c.phase += dt * (4 + c.speed * 0.75); c.lod.rotation.x = 0; c.lod.position.y = c.speed > 0.1 ? Math.abs(Math.sin(c.phase)) * 0.05 : 0; }
@@ -24626,7 +24811,7 @@ function fire(sh, ang, W, extra, dmgMul, spreadMul, first) {
   if (sh === player) for (const c of chars) {              // bodies on the ground, when you aim down at them
     if (c.alive || c.remove || c.inCar || Math.abs(c.x - ox) > best + 1 || Math.abs(c.z - oz) > best + 1) continue;
     const t = rayCircle(ox, oz, dx, dz, c.x, c.z, 0.55, best);
-    if (t < best) { camera.getWorldDirection(_cd); const hd = Math.hypot(c.x - camera.position.x, c.z - camera.position.z), y = camera.position.y + _cd.y / (Math.hypot(_cd.x, _cd.z) || 1e-3) * hd - c.y; if (t < 3 || y < 0.9) { best = t; hit = c; type = 'corpse'; } }
+    if (t < best) { camera.getWorldDirection(_cd); const hd = Math.hypot(c.x - camera.position.x, c.z - camera.position.z), y = camera.position.y + _cd.y / (Math.hypot(_cd.x, _cd.z) || 1e-3) * hd - c.y; if (t < 6 || y < 1.25) { best = t; hit = c; type = 'corpse'; } }
   }
   if (sh === player && heli && !heli.dead && camPitch < 0.05) {
     const t = rayCircle(ox, oz, dx, dz, heli.x, heli.z, 3.2, W.range); if (t < W.range) { best = t; hit = heli; type = 'heli'; }
@@ -27695,12 +27880,14 @@ sizeOverlay();
 // ── Post-processing: MSAA, ambient occlusion (High), bloom, a filmic colour grade and vignette. Quality presets and
 //    dynamic resolution keep the frame rate up. ──
 const GradeShader = {
-  uniforms: { tDiffuse: { value: null }, uSat: { value: 1.12 }, uCon: { value: 1.06 }, uVig: { value: 0.32 }, uTime: { value: 0 }, uGrain: { value: 0.0 }, uWarm: { value: 0.6 }, uHurt: { value: 0 } },
+  uniforms: { tDiffuse: { value: null }, uTexel: { value: new THREE.Vector2(1 / 1024, 1 / 768) }, uSharp: { value: 0.2 }, uSat: { value: 1.12 }, uCon: { value: 1.06 }, uVig: { value: 0.32 }, uTime: { value: 0 }, uGrain: { value: 0.0 }, uWarm: { value: 0.6 }, uHurt: { value: 0 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: `uniform sampler2D tDiffuse; uniform float uSat, uCon, uVig, uTime, uGrain, uWarm, uHurt; varying vec2 vUv;
+  fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 uTexel; uniform float uSharp; uniform float uSat, uCon, uVig, uTime, uGrain, uWarm, uHurt; varying vec2 vUv;
     float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
     void main(){
       vec4 c = texture2D(tDiffuse, vUv); vec3 col = c.rgb;
+      vec3 nb = texture2D(tDiffuse, vUv + vec2(uTexel.x, 0.0)).rgb + texture2D(tDiffuse, vUv - vec2(uTexel.x, 0.0)).rgb + texture2D(tDiffuse, vUv + vec2(0.0, uTexel.y)).rgb + texture2D(tDiffuse, vUv - vec2(0.0, uTexel.y)).rgb;
+      col = max(col + uSharp * (col * 4.0 - nb), 0.0);   // build 97: a light sharpen
       float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
       col = mix(vec3(l), col, uSat - uHurt * 0.8);                                   // saturation (drains when badly hurt)
       col *= pow(max(l, 1e-4) / 0.18, uCon - 1.0);                                   // contrast around mid grey
@@ -27714,9 +27901,9 @@ const GradeShader = {
     }`,
 };
 const QUALITY = {
-  low: { pr: 0.85, prMin: 0.6, msaa: 0, ao: false, bloom: false, shadow: 1024, fps: 45 },
-  medium: { pr: 1.0, prMin: 0.75, msaa: 2, ao: false, bloom: true, shadow: 2048, fps: 60 },   // build 80: 1.0 and 2x: cooler, hard to tell apart
-  high: { pr: 1.5, prMin: 0.9, msaa: 4, ao: false, bloom: true, shadow: 2048, fps: 60 },   // build 50: AO off everywhere: it was the grain crawling over the floor, and the costliest pass
+  low: { pr: 1.0, prMin: 0.85, msaa: 0, ao: false, bloom: false, shadow: 1024, fps: 45 },
+  medium: { pr: 1.3, prMin: 1.0, msaa: 0, ao: false, bloom: true, shadow: 2048, fps: 60 },   // build 97: sharper (it was 1.0, falling to 0.75, on a 2x screen); no MSAA, a light sharpen instead   // build 80: 1.0 and 2x: cooler, hard to tell apart
+  high: { pr: 2.0, prMin: 1.25, msaa: 2, ao: false, bloom: true, shadow: 2048, fps: 60 },   // build 50: AO off everywhere: it was the grain crawling over the floor, and the costliest pass
 };
 if (!QUALITY[settings.gfx]) settings.gfx = 'medium';
 const _rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: QUALITY[settings.gfx].msaa });
@@ -28548,7 +28735,7 @@ let lastDraw = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   if (dbgFreeze) { last = now; return; }
-  const cap = !started ? 20 : paused ? 30 : (QUALITY[settings.gfx].fps || 60);   // build 50: never draw faster than this (a 120 Hz screen was drawing twice as much for nothing, and the menu ran flat out)
+  const cap = !started ? 20 : paused ? 30 : settings.cool97 ? 40 : (QUALITY[settings.gfx].fps || 60);   // build 50: never draw faster than this (a 120 Hz screen was drawing twice as much for nothing, and the menu ran flat out)
   if (now - lastDraw < 1000 / cap - 1.5) return;
   lastDraw = now;
   const still = started && paused && !mapOpen;   // build 57: the pause menu sits over one still frame (redrawing under the blur, at a resolution that kept changing, made it flicker)
@@ -28580,7 +28767,7 @@ const _shPos = new THREE.Vector3();
 function shadowStep() {   // static city shadows don't need a redraw every frame, but they must the moment the shadow camera moves (that was the floor 'glitching' as you walked)
   renderer.shadowMap.autoUpdate = false;
   const moved = _shPos.distanceToSquared(sun.position) > 1e-6; if (moved) _shPos.copy(sun.position);
-  if (moved || (shadowTick = (shadowTick + 1) % 2) === 0) renderer.shadowMap.needsUpdate = true;
+  if (moved || (shadowTick = (shadowTick + 1) % 3) === 0) renderer.shadowMap.needsUpdate = true;
 }
 function softenIBL() {   // rough streets and walls take less of the blue sky light, so shade reads grey rather than navy
   const seen = new Set();
@@ -28635,7 +28822,7 @@ function init() {
   $('bigmapCv').addEventListener('contextmenu', (e) => mapClick(e, true));
   renderStartKeys();
   // Debug handle for the browser console. game.step(n) advances the simulation n frames.
-  window.game = { B96: { EX96, startSeq96, crewFight96 }, B95: { FLT95, HVA95, standOf95, board95, setupFlight95 }, B94: { PIL94 }, B93: { CK93, camRay93 }, B92: { RAIL92, TR92, RIG92, derail92, addTrailer92, railY92 }, B91: { EV91, startEv91, endEv91, BAR91, rhythm: () => rhythm() }, B90: { ST90, SC90, startStand90, breach90, say90, makeSC90, CONTRACTS, CONTRACT, acceptContract }, B89: { PL89, PUR89, plate89, chopNear89, perimeter89, camSetup89, chopSetup89 }, B88: { INJ88, BLEACH88, treat88, doc88, clean88, wounded88 }, B87: { WEAPONS, IMP87, FIRE87, SHIELD87, fireAt87, ignite87, impHold87, impSpot87, pen87 }, B86: { REC86, onFile86, findDelay86, cases86 }, STATS, CASES, WARRANT, B85: { CK85, AIM85, ck85Restore, safeSpot85, gunImpact85, bombImpact85, shellImpact85, revive85 }, B84: { PADS84, BLOCK84, patrolBlock84, padsSetup84, padOwner84, padHeli84 }, B83: { DISP83, dispatchStart83, nearestPost83, postSpawn83, heliOrigin83 }, B82: { VAULT82, SURF82, GRASS82, RUIN82, ROADS82, surfAt82, mantle82, ruinY82, vaultSetup82 }, B81: { AIR80, RPG80, CKPT80, SEARCH80, jetSpawn80, groundT80, underCover80, descMatch80, ckptTake80, bombBlast80, carGuard80, dropBomb80, armPlane80, updateSearch80, CAMP80: () => CAMP80, ROB80: () => ROB80 }, B79: { step: (n, dt = 1 / 60) => { for (let k = 0; k < n; k++) { update(dt); pressed.clear(); updateCamera(dt); } composer.render(); }, bldPal79, bldGrid79, WIT79, FIND79, wit79Pick, updateWit79, roadNear79, copBld79, copHouse79, victimId79, newsHTML79, CAM79, SUB79, sub79L2W, sub79W2L, subHall79 }, B77: { losClear: (a, b, c, d) => losClear(a, b, c, d), rayObstacles: (a, b, c, d, e, f) => rayObstacles(a, b, c, d, e, f), sleepRayT: (c, a, b, d, e, f) => sleepRayT(c, a, b, d, e, f), onRoofTop: () => onRoofTop(), eForBody, eSpot, carryWin, grassBlocked, POL77, polCount77, ragCeil, nearWin, nearBody, setCam: (y, p) => { camYaw = y; camPitch = p; }, heat: () => heat, stars: () => stars(), damageChar: (c, d, s) => damageChar(c, d, s) }, HAND76, GRAB76, HB, ragSelfTest: () => ({ RS, RS_SEGS }), BLOODT: { addDecal: (...a) => addDecal(...a), addHole: (...a) => addHole(...a), decal: () => decalMesh, wall: () => wallBloodMesh, clearWounds: (c) => clearWounds(c), respawn: () => respawn() }, CQ, FIN, startFin: (T) => startFin(T), cqTarget: () => cqTarget(), startDive: (x, z) => startDive(x, z), parry: (c) => parry(c), npcPunch: (c) => punch(c, WEAPONS[c.weapon], 1), WARDR, SAFEDECO, wardSpot: () => wardSpot(), openWard: (W) => openWard(W), closeWard: () => closeWard(), buildSafeDecor: () => buildSafeDecor(), PAPERS, DORIS, IDC, openPapers: (r) => openPapers(r), dorisTalk: () => dorisTalk(), hankTalk: () => hankTalk(), nearHank: () => nearHank(), nearDoris: () => nearDoris(), payday: () => payday(), DET, COVER, FORGER, detStart: () => detStart(), plantAtScene: (C) => plantAtScene(C), frameSpot: () => frameSpot(), frameHouse: (f) => frameHouse(f), buyIdentity: () => buyIdentity(), rentHouse: (i) => rentHouse(i), applyJob: () => applyJob(), workRest: () => workRest(), coverAction: () => coverAction(), doCover: (a) => doCover(a), sheriffSearch: () => sheriffSearch(), storeOf: () => storeOf(), atWork: () => atWork(), FENCES, SO, MG, FACE, schedMode: (H, h, d) => schedMode(H, h, d), stakeWait: (h) => stakeWait(h), cutPower: (H) => cutPower(H), openMG: (a) => openMG(a), holdAction: () => holdAction(), fenceSell: () => fenceSell(), nearFence: () => nearFence(), sensorAim: () => sensorAim(), NB, SENS, routineMode: (H) => routineMode(H), dateStr: () => dateStr(), hideNear: () => hideNear(), enterHide: (S) => enterHide(S), exitHide: () => exitHide(), countryRoadblock: () => countryRoadblock(), neighbourNoise: (x, z, l) => neighbourNoise(x, z, l), TRACK, VALLEY_RD, LAKE_RD, BACK_RD, roadsideN: () => ROADSIDE_N, COPB, copBranch: (x, z) => copBranch(x, z), IDOORS, homeWay: (c, x, z) => homeWay(c, x, z), spawnSleepers: (H) => spawnSleepers(H), wakeHome: (H) => wakeHome(H), idoorToggle: () => idoorToggle(), sleepK: (H) => sleepK(H), curHome: () => curHome(), WILDA, NPASS, SCOAST, interiorAtf: (x, z) => interiorAt(x, z), HAVEN, HAVEN_ROAD, spawnCop, groundYf: (x, z) => groundY(x, z), terrainHf: (x, z) => terrainH(x, z), RACE64, STATS, PROPS, RESPRAY, OUTFITS, buyProp, startRace, endRace, raceMeet, callLawyer, doRespray, buyOutfit, buyDrink, sleepAt, prompt64, renderPhone: () => renderPhone(), phoneAct: (a, b) => phoneAct(a, b), cp: () => computePrompt(), pois: () => mapPOIs(), NQ, CIVIC, costumeShop: () => costumeShop, seenNow: () => seenNow, deathKind: () => deathKind, seat(car) { const P = player; car.driver = P; car.parked = false; car.ai = null; P.inCar = car; }, MIL, PURSUIT, triggerMilitary, ARREST, CITY63, bustTGet: () => bustT, lostTGet: () => lostT, climbSpot, vaultSpot, hitSkyline, interiorAt, damageHeli, heliRoof, addHeat, starsN: () => stars(), indoorBox, togglePhone, HFIRES, PHONE, PROFILE, PUPS, WARRANT, PRESS, gt, issueWarrant, renderer, scene, obsIn, HEISTS, HEIST, HB, planHeist, HPROPS, CASE, BANK, jewelers, CASES, NCRIME, startNpcCrime, hitReact, findWallCover, shops, settings, ramCabin, sawCut, wallCrash, PAUSEDRAW, PUP, crashFlip, shatterCarGlass, carGeo: carGeometry, binds, pose, seatPuppet, SIT_DRV, dropPuppets,
+  window.game = { B97: { PERF97, SC97, makeSC97, corpseGore97, drawDist97 }, CONTRACTS, CONTRACT, acceptContract, B96: { EX96, startSeq96, crewFight96 }, B95: { FLT95, HVA95, standOf95, board95, setupFlight95 }, B94: { PIL94 }, B93: { CK93, camRay93 }, B92: { RAIL92, TR92, RIG92, derail92, addTrailer92, railY92 }, B91: { EV91, startEv91, endEv91, BAR91, rhythm: () => rhythm() }, B90: { ST90, SC90, startStand90, breach90, say90, makeSC90, CONTRACTS, CONTRACT, acceptContract }, B89: { PL89, PUR89, plate89, chopNear89, perimeter89, camSetup89, chopSetup89 }, B88: { INJ88, BLEACH88, treat88, doc88, clean88, wounded88 }, B87: { WEAPONS, IMP87, FIRE87, SHIELD87, fireAt87, ignite87, impHold87, impSpot87, pen87 }, B86: { REC86, onFile86, findDelay86, cases86 }, STATS, CASES, WARRANT, B85: { CK85, AIM85, ck85Restore, safeSpot85, gunImpact85, bombImpact85, shellImpact85, revive85 }, B84: { PADS84, BLOCK84, patrolBlock84, padsSetup84, padOwner84, padHeli84 }, B83: { DISP83, dispatchStart83, nearestPost83, postSpawn83, heliOrigin83 }, B82: { VAULT82, SURF82, GRASS82, RUIN82, ROADS82, surfAt82, mantle82, ruinY82, vaultSetup82 }, B81: { AIR80, RPG80, CKPT80, SEARCH80, jetSpawn80, groundT80, underCover80, descMatch80, ckptTake80, bombBlast80, carGuard80, dropBomb80, armPlane80, updateSearch80, CAMP80: () => CAMP80, ROB80: () => ROB80 }, B79: { step: (n, dt = 1 / 60) => { for (let k = 0; k < n; k++) { update(dt); pressed.clear(); updateCamera(dt); } composer.render(); }, bldPal79, bldGrid79, WIT79, FIND79, wit79Pick, updateWit79, roadNear79, copBld79, copHouse79, victimId79, newsHTML79, CAM79, SUB79, sub79L2W, sub79W2L, subHall79 }, B77: { losClear: (a, b, c, d) => losClear(a, b, c, d), rayObstacles: (a, b, c, d, e, f) => rayObstacles(a, b, c, d, e, f), sleepRayT: (c, a, b, d, e, f) => sleepRayT(c, a, b, d, e, f), onRoofTop: () => onRoofTop(), eForBody, eSpot, carryWin, grassBlocked, POL77, polCount77, ragCeil, nearWin, nearBody, setCam: (y, p) => { camYaw = y; camPitch = p; }, heat: () => heat, stars: () => stars(), damageChar: (c, d, s) => damageChar(c, d, s) }, HAND76, GRAB76, HB, ragSelfTest: () => ({ RS, RS_SEGS }), BLOODT: { addDecal: (...a) => addDecal(...a), addHole: (...a) => addHole(...a), decal: () => decalMesh, wall: () => wallBloodMesh, clearWounds: (c) => clearWounds(c), respawn: () => respawn() }, CQ, FIN, startFin: (T) => startFin(T), cqTarget: () => cqTarget(), startDive: (x, z) => startDive(x, z), parry: (c) => parry(c), npcPunch: (c) => punch(c, WEAPONS[c.weapon], 1), WARDR, SAFEDECO, wardSpot: () => wardSpot(), openWard: (W) => openWard(W), closeWard: () => closeWard(), buildSafeDecor: () => buildSafeDecor(), PAPERS, DORIS, IDC, openPapers: (r) => openPapers(r), dorisTalk: () => dorisTalk(), hankTalk: () => hankTalk(), nearHank: () => nearHank(), nearDoris: () => nearDoris(), payday: () => payday(), DET, COVER, FORGER, detStart: () => detStart(), plantAtScene: (C) => plantAtScene(C), frameSpot: () => frameSpot(), frameHouse: (f) => frameHouse(f), buyIdentity: () => buyIdentity(), rentHouse: (i) => rentHouse(i), applyJob: () => applyJob(), workRest: () => workRest(), coverAction: () => coverAction(), doCover: (a) => doCover(a), sheriffSearch: () => sheriffSearch(), storeOf: () => storeOf(), atWork: () => atWork(), FENCES, SO, MG, FACE, schedMode: (H, h, d) => schedMode(H, h, d), stakeWait: (h) => stakeWait(h), cutPower: (H) => cutPower(H), openMG: (a) => openMG(a), holdAction: () => holdAction(), fenceSell: () => fenceSell(), nearFence: () => nearFence(), sensorAim: () => sensorAim(), NB, SENS, routineMode: (H) => routineMode(H), dateStr: () => dateStr(), hideNear: () => hideNear(), enterHide: (S) => enterHide(S), exitHide: () => exitHide(), countryRoadblock: () => countryRoadblock(), neighbourNoise: (x, z, l) => neighbourNoise(x, z, l), TRACK, VALLEY_RD, LAKE_RD, BACK_RD, roadsideN: () => ROADSIDE_N, COPB, copBranch: (x, z) => copBranch(x, z), IDOORS, homeWay: (c, x, z) => homeWay(c, x, z), spawnSleepers: (H) => spawnSleepers(H), wakeHome: (H) => wakeHome(H), idoorToggle: () => idoorToggle(), sleepK: (H) => sleepK(H), curHome: () => curHome(), WILDA, NPASS, SCOAST, interiorAtf: (x, z) => interiorAt(x, z), HAVEN, HAVEN_ROAD, spawnCop, groundYf: (x, z) => groundY(x, z), terrainHf: (x, z) => terrainH(x, z), RACE64, STATS, PROPS, RESPRAY, OUTFITS, buyProp, startRace, endRace, raceMeet, callLawyer, doRespray, buyOutfit, buyDrink, sleepAt, prompt64, renderPhone: () => renderPhone(), phoneAct: (a, b) => phoneAct(a, b), cp: () => computePrompt(), pois: () => mapPOIs(), NQ, CIVIC, costumeShop: () => costumeShop, seenNow: () => seenNow, deathKind: () => deathKind, seat(car) { const P = player; car.driver = P; car.parked = false; car.ai = null; P.inCar = car; }, MIL, PURSUIT, triggerMilitary, ARREST, CITY63, bustTGet: () => bustT, lostTGet: () => lostT, climbSpot, vaultSpot, hitSkyline, interiorAt, damageHeli, heliRoof, addHeat, starsN: () => stars(), indoorBox, togglePhone, HFIRES, PHONE, PROFILE, PUPS, WARRANT, PRESS, gt, issueWarrant, renderer, scene, obsIn, HEISTS, HEIST, HB, planHeist, HPROPS, CASE, BANK, jewelers, CASES, NCRIME, startNpcCrime, hitReact, findWallCover, shops, settings, ramCabin, sawCut, wallCrash, PAUSEDRAW, PUP, crashFlip, shatterCarGlass, carGeo: carGeometry, binds, pose, seatPuppet, SIT_DRV, dropPuppets,
     player: () => player, skyscrapers, nearElevator, rideElevator, nearDoor, setDoor, chars, cars, shops, landmarks, keys, mouse, get stars() { return stars(); }, addHeat,
     setHeat(v) { heat = v; lostT = 0; }, setFP(v) { fpMode = v; }, weather, setWeather(st) { weather.t = 0; const r = Math.random; Math.random = () => (st === 'rain' ? 0.1 : st === 'overcast' ? 0.5 : 0.9); updateWeather(0); Math.random = r; weather.cloud = weather.target.cloud; weather.rain = weather.target.rain; weather.wet = st === 'rain' ? 1 : 0; }, jewelers, homes, get costumeShop() { return costumeShop; }, setMask, buyMask, interiorAt, smashCase, nearCase, get maskedCrime() { return maskedCrime; }, MT, HWY, LAKES, MBASE, AIRPORT, ragdolls, mtH, damageChar, explodeAt, ragStart, get airTraffic() { return airTraffic; }, planes, AIR, BASE, RUNWAY, CAUSE, POIS, SPOTS, dogs, enterPlane, exitPlane, get baseAlarm() { return baseAlarm; }, regionOf, SKYLINE, get planeLock() { return planeLock; }, corpseInFront, corpseHit, ISL, BRIDGE, LOOP, islandH, onIsland, spawnIslandPed, spawnIslandCar, terrainH, groundY, incidents, get ambulance() { return ambulance; }, makeInjured, spawnAmbulance, RAMPS, PIER, get copProvokedT() { return copProvokedT; }, copAttackers, tryEnterCar, get para() { return para; }, binds, settings, bars, interiors, rockets, get lockT() { return lockT; }, get gameHour() { return gameHour; }, setHour(h) { gameHour = h; }, toggleMap, get wheelOpen() { return wheelOpen; }, get job() { return job; }, startJob, offerJob, get seenNow() { return seenNow; }, spawnRoadblock, barrels, grenades, get shopOpen() { return shopOpen; }, get deathKind() { return deathKind; }, get heli() { return heli; },
     ARM, spawnArmored, armoredStop, TGT, targetInfo, createCar, exitCar, TAXI, WARDEN, COPS, spikes, layStrip, FENCE, fenceSpot, fenceSell, BANK, setWaypoint(x, z) { waypoint = x == null ? null : { x, z }; }, spawnTraffic,
