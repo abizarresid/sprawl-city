@@ -338,7 +338,7 @@
 
 <div id="start" class="screen">
   <h1>SPRAWL CITY</h1>
-  <div class="sub">OPEN-WORLD CRIME SANDBOX · SINGLE PLAYER · BUILD 97 (Nov 23)</div>
+  <div class="sub">OPEN-WORLD CRIME SANDBOX · SINGLE PLAYER · BUILD 98 (Nov 23)</div>
   <div class="keys">
     <div><kbd>WASD</kbd> move · <kbd>Shift</kbd> sprint</div><div><kbd>Mouse</kbd> look (captured while playing)</div>
     <div><kbd>LMB</kbd> shoot / punch · <kbd>RMB</kbd> aim</div><div><kbd>V</kbd> kick · <kbd>R</kbd> reload</div>
@@ -414,7 +414,7 @@ const N = CFG.GRID, B = CFG.BLOCK, R = CFG.ROAD, SW = CFG.SIDEWALK;
 const HALF = N * B / 2, CORNER_R = 5;            // road centre lines sit on -HALF + k*B
 const LIM = HALF + R / 2;          // outer edge of the road grid
 const WORLD = LIM + 22;            // beach edge (sea wall)
-const CHUNK = 176, PIECE_TILE = 2;   // props cull in 176 m chunks; static city geometry merges in 352 m tiles
+const CHUNK = 176, PIECE_TILE = 1;   // build 98: 176 m tiles, each swaps to simplified boxes past a few hundred metres   // props cull in 176 m chunks; static city geometry merges in 352 m tiles
 const DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 // ── The coastline: instead of a square with a sand border, the land has rounded eastern corners, coves and beaches
 //    that slope into the sea. The west side runs on into the foothills. coastSD(x, z) is metres to the shore:
@@ -968,14 +968,14 @@ function piece(matKey, geo, color = 0xffffff) {
   }
   geo.computeBoundingBox(); geo.boundingBox.getCenter(_v1);
   const bb80 = geo.boundingBox, det80 = Math.max(bb80.max.x - bb80.min.x, bb80.max.y - bb80.min.y, bb80.max.z - bb80.min.z) < 2.6;   // build 80: small things are details, drawn only nearby
-  const key = det80 ? 'd' + (Math.floor((_v1.x + WORLD) / CHUNK) * 128 + Math.floor((_v1.z + WORLD) / CHUNK)) + '|' + matKey : (Math.floor((_v1.x + WORLD) / (CHUNK * PIECE_TILE)) * 64 + Math.floor((_v1.z + WORLD) / (CHUNK * PIECE_TILE))) + '|' + matKey;   // 352 m tiles: a quarter as many draw calls
+  const key = det80 ? 'd' + (Math.floor((_v1.x + WORLD) / CHUNK) * 128 + Math.floor((_v1.z + WORLD) / CHUNK)) + '|' + matKey : (Math.floor((_v1.x + WORLD) / (CHUNK * PIECE_TILE)) * 1000 + Math.floor((_v1.z + WORLD) / (CHUNK * PIECE_TILE))) + '|' + matKey;   // 352 m tiles: a quarter as many draw calls
   let arr = chunkGeo.get(key); if (!arr) chunkGeo.set(key, (arr = []));
   const g = prepGeo(geo, color); if (pieceMirZ !== null) mirrorGeoZ(g, pieceMirZ); terrainify(g); arr.push(g);
 }
 function finalizeChunks() {
   for (const [key, arr] of chunkGeo) {
     const matKey = key.split('|')[1]; capture82(arr, matKey);   // build 82: grass stays off it; you can climb it
-    const m = new THREE.Mesh(mergeGeometries(arr, false), MATS[matKey]);
+    const m = new THREE.Mesh(compactGeo98(mergeGeometries(arr, false)), MATS[matKey]);   // build 98: stored compactly
     m.castShadow = !NO_SHADOW.has(matKey); m.receiveShadow = true; m.userData.chunk = true; m.userData.detail = key[0] === 'd';
     scene.add(m);
     arr.forEach((g) => g.dispose());
@@ -1052,7 +1052,7 @@ function roofWithHut(x0, z0, x1, z1, h, y0, dn, trim) {
   SKYLINE[SKYLINE.length - 1].hutStatic = true;
 }
 function towerRaw(x0, z0, x1, z1, h, facade, color, o = {}) {
-  SKYLINE.push({ x0, z0, x1, z1, top: (pieceAnchor || 0) + (o.y0 || 0) + h + 0.6, tower: true, base: pieceAnchor || 0, y0: o.y0 || 0, facade, ru: [] });
+  SKYLINE.push({ x0, z0, x1, z1, top: (pieceAnchor || 0) + (o.y0 || 0) + h + 0.6, tower: true, base: pieceAnchor || 0, y0: o.y0 || 0, facade, col98: typeof color === 'number' ? color : undefined, ru: [] });
   const RU = SKYLINE[SKYLINE.length - 1].ru, ru = (x, z, hw, hd) => RU.push([x - hw, z - hd, x + hw, z + hd]);   // build 48: roof clutter you bump into
   const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, y0 = o.y0 ?? 0;
   const dn = towerDoorSide(x0, z0, x1, z1, h, o, facade);
@@ -13947,7 +13947,7 @@ renderPhone = function () {   // eslint-disable-line no-func-assign
 };
 (() => { const st = document.createElement('style'); st.textContent = '#phone .bd { scroll-behavior: auto !important; } #phone { max-height: calc(100vh - 32px) !important; }'; document.head.appendChild(st); })();
 
-function updateBuild66(dt) { updateIDoors(dt); updateSleepers(dt); houseWinGround(); updateCopHud(dt); homeLife(dt); updateHomeGlow(dt); updateBuild67(dt); updateBuild68(dt); updateBuild69(dt); updateBuild69b(dt); updateBuild70(dt); updateBuild71(dt); updateBuild74(dt); updateBuild75(dt); updateBuild76(dt); updateBuild77(dt); updateBuild79(dt); updateBuild81(dt); updateBuild81b(dt); updateBuild82(dt); updateDispatch83(); updateBuild84(dt); updateBuild85(dt); updateBuild86(dt); updateBuild87(dt); updateBuild88(dt); updateBuild89(dt); updateBuild90(dt); updateBuild91(dt); updateBuild92(dt); updateBuild93(dt); updateBuild94(dt); updateBuild95(dt); updateBuild96(dt); updateBuild97(dt); }
+function updateBuild66(dt) { updateIDoors(dt); updateSleepers(dt); houseWinGround(); updateCopHud(dt); homeLife(dt); updateHomeGlow(dt); updateBuild67(dt); updateBuild68(dt); updateBuild69(dt); updateBuild69b(dt); updateBuild70(dt); updateBuild71(dt); updateBuild74(dt); updateBuild75(dt); updateBuild76(dt); updateBuild77(dt); updateBuild79(dt); updateBuild81(dt); updateBuild81b(dt); updateBuild82(dt); updateDispatch83(); updateBuild84(dt); updateBuild85(dt); updateBuild86(dt); updateBuild87(dt); updateBuild88(dt); updateBuild89(dt); updateBuild90(dt); updateBuild91(dt); updateBuild92(dt); updateBuild93(dt); updateBuild94(dt); updateBuild95(dt); updateBuild96(dt); updateBuild97(dt); updateBuild98(dt); }
 // ═════════ Build 66: three police forces, each marked. Sprawl City PD in the city, Havenport PD in Havenport,
 //   the Highway Patrol everywhere in between: their own uniforms, their own cars, their own radio ═════════
 const COPB = {
@@ -18820,7 +18820,7 @@ collapseBuilding = function (o, src) {   // eslint-disable-line no-func-assign
     if (bb.max.x < o.x0 - pad || bb.min.x > o.x1 + pad || bb.max.z < o.z0 - pad || bb.min.z > o.z1 + pad) continue;
     U.geo.push({ g, pos: g.attributes.position.array.slice(), nrm: g.attributes.normal ? g.attributes.normal.array.slice() : null });
   }
-  const obs0 = obsIn(o.x0 - 0.4, o.z0 - 0.4, o.x1 + 0.4, o.z1 + 0.4);
+  const obs0 = obsIn(o.x0 - 0.4, o.z0 - 0.4, o.x1 + 0.4, o.z1 + 0.4).slice();
   const rooms0 = interiors.filter((r) => r.x0 !== undefined && !r.ruin82 && r.cx > o.x0 && r.cx < o.x1 && r.cz > o.z0 && r.cz < o.z1);
   const wins0 = WINS.filter((W) => !W.broken && W.x > o.x0 - 0.8 && W.x < o.x1 + 0.8 && W.z > o.z0 - 0.8 && W.z < o.z1 + 0.8);
   const si = STAIRS.findIndex((S) => S.o === o);
@@ -20692,7 +20692,7 @@ function updatePerf97(dt) {
   for (const m of PERF97.list) {
     const g = m.geometry; if (!g.boundingSphere) g.computeBoundingSphere(); const bs = g.boundingSphere; if (bs.radius > 1500) continue;   // the ground, the sea, the sky
     const d = Math.hypot(bs.center.x - cp.x, bs.center.z - cp.z) - bs.radius;
-    if (m.userData.chunk || m.userData.far97 !== undefined || d > far) { const v = d < far; if (m.userData.far97 !== v) { m.userData.far97 = v; m.visible = v; } }   // out past the haze: not drawn at all
+    if (!m.userData.chunk && (m.userData.far97 !== undefined || d > far)) { const v = d < far; if (m.userData.far97 !== v) { m.userData.far97 = v; m.visible = v; } }   // out past the haze: not drawn at all
     if (m.userData.chunk) m.castShadow = !m.userData.detail && d < sh;   // only what's near casts into the shadow map, and never the small details
   }
   if (grade.uniforms.uTexel) { const pr = renderer.getPixelRatio(); grade.uniforms.uTexel.value.set(1 / (innerWidth * pr), 1 / (innerHeight * pr)); grade.uniforms.uSharp.value = settings.gfx === 'low' ? 0.12 : 0.2; }
@@ -20861,6 +20861,310 @@ function updateSC97(dt) {
 }
 updateSC90 = function () {};   // eslint-disable-line no-func-assign
 function updateBuild97(dt) { updatePerf97(dt); updateCorpseGore97(dt); updateSC97(dt); }
+// ═════════ Build 98: a frame profiler (where each frame's time goes, CPU and GPU), and simplified far buildings: past a few
+//   hundred metres the detailed city blocks give way to one cheap mesh of plain boxes, a single draw call for the lot ═════════
+
+// ── the profiler: F3 shows it; window.game.B98.PROF98 holds it ──
+const PROF98 = { acc: {}, avg: {}, n: 0, t: 0, gpu: null, gpuMs: 0, q: [], ext: undefined, heap: 0, alloc: 0, allocAcc: 0 };
+function prof98(name, fn) { return function (...a) { const t0 = performance.now(), r = fn.apply(this, a); PROF98.acc[name] = (PROF98.acc[name] || 0) + performance.now() - t0; return r; }; }
+update = prof98('update', update);   // eslint-disable-line no-func-assign
+drawOverlay = prof98('overlay', drawOverlay);   // eslint-disable-line no-func-assign
+drawMinimap = prof98('minimap', drawMinimap);   // eslint-disable-line no-func-assign
+updateHUD = prof98('hud', updateHUD);   // eslint-disable-line no-func-assign
+updateCamera = prof98('camera', updateCamera);   // eslint-disable-line no-func-assign
+renderPip = prof98('pip', renderPip);   // eslint-disable-line no-func-assign
+function profRender98() {   // wrap the composer once it exists, with a GPU timer round it where the browser allows
+  if (PROF98.wrapped || typeof composer !== 'object') return; PROF98.wrapped = true;
+  const gl = renderer.getContext(); PROF98.ext = gl.getExtension('EXT_disjoint_timer_query_webgl2'); const ext = PROF98.ext;
+  const raw = composer.render.bind(composer);
+  composer.render = function (d) {   // (the GPU timer runs only while F3's overlay is up)
+    let q = null; if (ext && PERF64.on && PROF98.q.length < 4) { q = gl.createQuery(); gl.beginQuery(ext.TIME_ELAPSED_EXT, q); }
+    const t0 = performance.now(); raw(d); PROF98.acc.render = (PROF98.acc.render || 0) + performance.now() - t0;
+    if (q) { gl.endQuery(ext.TIME_ELAPSED_EXT); PROF98.q.push(q); }
+    for (let i = PROF98.q.length - 1; i >= 0; i--) { const qq = PROF98.q[i]; if (gl.getQueryParameter(qq, gl.QUERY_RESULT_AVAILABLE)) { if (!gl.getParameter(ext.GPU_DISJOINT_EXT)) PROF98.gpuMs = lerp(PROF98.gpuMs, gl.getQueryParameter(qq, gl.QUERY_RESULT) / 1e6, 0.2); gl.deleteQuery(qq); PROF98.q.splice(i, 1); } }
+  };
+}
+function profTick98(dt) {
+  profRender98(); PROF98.n++; PROF98.t += dt;
+  const m = performance.memory; if (m) { const h = m.usedJSHeapSize; if (PROF98.heap && h > PROF98.heap) PROF98.allocAcc += h - PROF98.heap; PROF98.heap = h; }
+  if (PROF98.t < 1) return;
+  for (const k of Object.keys(PROF98.acc)) { PROF98.avg[k] = +(PROF98.acc[k] / PROF98.n).toFixed(2); PROF98.acc[k] = 0; }
+  PROF98.alloc = +(PROF98.allocAcc / PROF98.t / 1048576).toFixed(1); PROF98.allocAcc = 0; PROF98.n = 0; PROF98.t = 0;
+  if (PERF64.on && PERF64.el) { const A = PROF98.avg; PERF64.el.textContent = PERF64.el.textContent.split('\n· ')[0] + `\n· CPU ms/frame: update ${A.update ?? 0}  render ${A.render ?? 0}  overlay ${A.overlay ?? 0}  map ${A.minimap ?? 0}  hud ${A.hud ?? 0}\n· GPU ${PROF98.ext ? PROF98.gpuMs.toFixed(1) + ' ms' : 'n/a'}  ·  JS garbage ${PROF98.alloc} MB/s`; }
+}
+
+// ── simplified far buildings ──
+const LOD98 = { n0: 0, mesh: null, tex: null, data: null, N: 96, OFF: 40, t: 0, ruins: -1, built: false };
+const _init98 = init;
+init = function () { _init98(); LOD98.n0 = SKYLINE.length; LOD98.savedMB = Math.round((compactGeo98.saved || 0) / 1048576); setTimeout(gcNudge98, 1200); };   // eslint-disable-line no-func-assign
+const tileOf98 = (x, z) => [Math.floor((x + WORLD) / CHUNK) + LOD98.OFF, Math.floor((z + WORLD) / CHUNK) + LOD98.OFF];
+const LODCOL98 = { brick: 0x9a5a48, office: 0x8d959e, glassp: 0x5f7f99, glass: 0x6f8ea8, concrete: 0xc4bdb0, stucco: 0xd8cfbf, siding: 0xcfc7b8, apartment: 0xb9a68e };
+function buildLod98() {
+  const pos = [], col = [], tile = [], c = new THREE.Color(), shrink = 0.35;
+  const quad = (ax, ay, az, bx, by, bz, cx, cy, cz, dx, dy, dz, hex, t) => { for (const p of [[ax, ay, az], [bx, by, bz], [cx, cy, cz], [ax, ay, az], [cx, cy, cz], [dx, dy, dz]]) { pos.push(...p); c.setHex(hex); col.push(c.r, c.g, c.b); tile.push(t[0], t[1]); } };
+  for (let i = 0; i < LOD98.n0; i++) {
+    const o = SKYLINE[i]; if (o.ruin || o.sky) continue;
+    const w = o.x1 - o.x0, d = o.z1 - o.z0; if (w < 3 || d < 3 || (!o.tower && o.flatY === undefined && (w < 8 || d < 8))) continue;   // buildings, not pylons and poles
+    const cx = (o.x0 + o.x1) / 2, cz = (o.z0 + o.z1) / 2; if (Math.abs(cx) > WORLD || Math.abs(cz) > WORLD) continue;   // the city only: Havenport, Pinewood and the rest keep their own
+    const y0 = o.bot ?? ((o.base ?? terrainH(cx, cz)) + (o.y0 || 0)), y1 = o.top - shrink; if (y1 - y0 < 2.5) continue;
+    const x0 = o.x0 + shrink, x1 = o.x1 - shrink, z0 = o.z0 + shrink, z1 = o.z1 - shrink, base = o.col98 ?? LODCOL98[o.facade] ?? 0xa8a296, t = tileOf98(cx, cz);
+    const wall = new THREE.Color(base).multiplyScalar(0.72).getHex(), roof = new THREE.Color(base).multiplyScalar(0.56).getHex();
+    quad(x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1, wall, t); quad(x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0, wall, t);
+    quad(x1, y0, z1, x1, y0, z0, x1, y1, z0, x1, y1, z1, wall, t); quad(x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0, wall, t);
+    quad(x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, y1, z0, roof, t);
+  }
+  // the streets and blocks under the far buildings (the detailed ground goes with the detailed tile)
+  const h = (x, z, up) => terrainH(x, z) + up;
+  for (let x = -WORLD; x < WORLD; x += B) for (let z = -WORLD; z < WORLD; z += B) {   // asphalt everywhere first
+    const bx = Math.min(x + B, WORLD), bz = Math.min(z + B, WORLD);
+    quad(x, h(x, bz, 0.05), bz, bx, h(bx, bz, 0.05), bz, bx, h(bx, z, 0.05), z, x, h(x, z, 0.05), z, 0x4b4c50, tileOf98((x + bx) / 2, (z + bz) / 2));
+  }
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {   // then each block: pavement and lots, sand on the beach blocks, grass on the wild ones
+    const x0 = -HALF + i * B + R / 2, z0 = -HALF + j * B + R / 2, x1 = x0 + B - R, z1 = z0 + B - R, bk = i * N + j, col = BEACH[bk] ? 0xcdbf98 : WILDA[bk] ? 0x6f8a55 : 0x9d988f;
+    quad(x0, h(x0, z1, 0.12), z1, x1, h(x1, z1, 0.12), z1, x1, h(x1, z0, 0.12), z0, x0, h(x0, z0, 0.12), z0, col, tileOf98((x0 + x1) / 2, (z0 + z1) / 2));
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('aTile', new THREE.Float32BufferAttribute(tile, 2)); g.computeVertexNormals(); g.computeBoundingSphere();
+  if (!LOD98.tex) { LOD98.data = new Uint8Array(LOD98.N * LOD98.N * 4); LOD98.tex = new THREE.DataTexture(LOD98.data, LOD98.N, LOD98.N, THREE.RGBAFormat); LOD98.tex.needsUpdate = true; }
+  if (!LOD98.mat) {
+    LOD98.mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0, emissive: 0x000000 });   // lit like the real thing, sky light included
+    LOD98.mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uTiles = { value: LOD98.tex };
+      sh.vertexShader = 'attribute vec2 aTile;\nuniform sampler2D uTiles;\n' + sh.vertexShader.replace('#include <fog_vertex>', `#include <fog_vertex>
+        if (texture2D(uTiles, (aTile + 0.5) / ${LOD98.N}.0).r > 0.5) gl_Position = vec4(0.0, 0.0, 2.0, 1.0);   // this block is drawn in full detail right now`);
+    };
+  }
+  if (LOD98.mesh) { scene.remove(LOD98.mesh); LOD98.mesh.geometry.dispose(); }
+  const m = new THREE.Mesh(g, LOD98.mat); m.frustumCulled = false; m.castShadow = false; m.receiveShadow = false; m.userData.lod98 = true; scene.add(m); LOD98.mesh = m;
+  LOD98.ruins = SKYLINE.filter((o) => o.ruin).length; LOD98.built = true;
+}
+function lodDist98() { const P = player, air = P && (P.inPlane || P.sky); return settings.gfx === 'high' ? (air ? 480 : 420) : settings.gfx === 'low' ? (air ? 260 : 220) : (air ? 340 : 300); }
+// the old chunk cull, now with detail by tile: near tiles in full, far tiles left to the boxes
+cullChunks = function (dt) {   // eslint-disable-line no-func-assign
+  if ((CHUNKCULL.t -= dt) > 0) return; CHUNKCULL.t = 0.25;
+  if (!CHUNKCULL.list) { CHUNKCULL.list = []; for (const m of scene.children) if (m.isMesh && m.userData.chunk) { m.matrixAutoUpdate = false; m.updateMatrix(); if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere(); if (!m.geometry.boundingBox) m.geometry.computeBoundingBox(); CHUNKCULL.list.push(m); } }
+  if (!LOD98.built && LOD98.n0) buildLod98();
+  if (LOD98.built && SKYLINE.filter((o) => o.ruin).length !== LOD98.ruins) buildLod98();   // something came down: redraw the far city without it
+  const cx = camera.position.x, cz = camera.position.z, far = scene.fog ? scene.fog.far * 1.06 : 4500, P = player;
+  const dfar = Math.min(far, P && P.inPlane ? 260 : settings.gfx === 'high' ? 320 : settings.gfx === 'low' ? 150 : 200), near = lodDist98(), NT = LOD98.N, D = LOD98.data;
+  if (D) {   // which tiles are in full detail: the one you're in and any whose edge is within reach
+    D.fill(0);
+    const [ti, tj] = tileOf98(cx, cz), r = Math.ceil(near / CHUNK) + 1;
+    for (let i = ti - r; i <= ti + r; i++) for (let j = tj - r; j <= tj + r; j++) {
+      if (i < 0 || j < 0 || i >= NT || j >= NT) continue;
+      const x0 = (i - LOD98.OFF) * CHUNK - WORLD, z0 = (j - LOD98.OFF) * CHUNK - WORLD, dx = Math.max(x0 - cx, 0, cx - (x0 + CHUNK)), dz = Math.max(z0 - cz, 0, cz - (z0 + CHUNK));
+      if (Math.hypot(dx, dz) < near) D[(j * NT + i) * 4] = 255;
+    }
+    LOD98.tex.needsUpdate = true;
+  }
+  const haven = new Set(HAVEN.meshes);
+  for (const m of CHUNKCULL.list) {
+    const S = m.geometry.boundingSphere, d = Math.hypot(S.center.x - cx, S.center.z - cz) - S.radius;
+    let v;
+    if (m.userData.detail) v = d < dfar;
+    else if (haven.has(m) || !LOD98.built) v = d < far;
+    else {
+      if (m.userData.t98 === undefined) { const bb = m.geometry.boundingBox, x = (bb.min.x + bb.max.x) / 2, z = (bb.min.z + bb.max.z) / 2, t = tileOf98(x, z); m.userData.t98 = Math.abs(x) < WORLD && Math.abs(z) < WORLD ? t[1] * NT + t[0] : -1; }
+      v = d < far && (m.userData.t98 < 0 || D[m.userData.t98 * 4] === 255);   // outside the city: as before
+    }
+    if (m.visible !== v) m.visible = v;
+  }
+  if (LOD98.mat) LOD98.mat.emissive.setRGB(0.16 * nightK, 0.13 * nightK, 0.08 * nightK);   // lit windows, from a distance, at night
+};
+function updateBuild98(dt) { updateStandins98(); profTick98(dt); }
+
+// ═════════ the CPU side, where the heat really came from: the GPU sat at ~4 ms a frame, while the main thread spent ~15–20 ms
+//   simulating the whole city every frame, then rebuilding transforms for 22,000 objects, then collecting ~1 MB of garbage ═════════
+
+// ── buildings looked up by grid, not by scanning all 2,700 of them (it was called ~150 times a frame) ──
+const SKYG98 = { n: -1, t: -99, last: null, map: new Map(), big: [], S: 32 };
+const _hitSky98 = hitSkyline;
+function skyGrid98() {
+  const G = SKYG98, S = G.S; G.map.clear(); G.big.length = 0; G.n = SKYLINE.length; G.t = performance.now(); G.last = SKYLINE[SKYLINE.length - 1];
+  for (let k = 0; k < SKYLINE.length; k++) {
+    const b = SKYLINE[k], i0 = Math.floor(b.x0 / S), i1 = Math.floor(b.x1 / S), j0 = Math.floor(b.z0 / S), j1 = Math.floor(b.z1 / S);
+    if (!((i1 - i0 + 1) * (j1 - j0 + 1) <= 64)) { G.big.push(k); continue; }
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const key = (i + 4000) * 8192 + (j + 4000); let a = G.map.get(key); if (!a) G.map.set(key, (a = [])); a.push(k); }
+  }
+}
+hitSkyline = function (x, y, z, r = 1) {   // eslint-disable-line no-func-assign
+  const G = SKYG98;
+  if (G.n !== SKYLINE.length || G.last !== SKYLINE[SKYLINE.length - 1] || performance.now() - G.t > 3000) skyGrid98();   // (bounds can change: rebuilt every few seconds anyway)
+  if (!(r <= 32)) return _hitSky98(x, y, z, r);
+  let best = -1;
+  const i0 = Math.floor((x - r) / G.S), i1 = Math.floor((x + r) / G.S), j0 = Math.floor((z - r) / G.S), j1 = Math.floor((z + r) / G.S);
+  for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+    const a = G.map.get((i + 4000) * 8192 + (j + 4000)); if (!a) continue;
+    for (let q = 0; q < a.length; q++) {
+      const k = a[q]; if (best >= 0 && k >= best) break; const b = SKYLINE[k];
+      if (x > b.x0 - r && x < b.x1 + r && z > b.z0 - r && z < b.z1 + r && y < b.top && (b.bot === undefined || y > b.bot)) { best = k; break; }
+    }
+  }
+  for (let q = 0; q < G.big.length; q++) {
+    const k = G.big[q]; if (best >= 0 && k >= best) break; const b = SKYLINE[k];
+    if (x > b.x0 - r && x < b.x1 + r && z > b.z0 - r && z < b.z1 + r && y < b.top && (b.bot === undefined || y > b.bot)) { best = k; break; }
+  }
+  return best >= 0 ? SKYLINE[best] : null;
+};
+
+// ── people kept apart by sweeping along x, not by testing every pair (240 people: 29,000 pairs a frame) ──
+const SEP98 = { a: [], cs: [] }, byX98 = (p, q) => p.x - q.x, bySx98 = (p, q) => p.sx98 - q.sx98;
+separateChars = function () {   // eslint-disable-line no-func-assign
+  const A = SEP98.a; A.length = 0;
+  for (const c of chars) if (c.alive && !c.inCar && !c.ghost && !c.inPlane && !c.sky && !c.sleeping && !c.sitting) A.push(c);
+  A.sort(byX98);
+  for (let i = 0; i < A.length; i++) {
+    const a = A[i];
+    for (let j = i + 1; j < A.length; j++) {
+      const b = A[j]; if (b.x - a.x > 0.9) break;
+      if (Math.abs((a.y || 0) - (b.y || 0)) > 1.6) continue;
+      const dx = b.x - a.x, dz = b.z - a.z, dd = dx * dx + dz * dz;
+      if (dd > 0.7 || dd < 1e-6) continue;
+      const d = Math.sqrt(dd), push = (0.84 - d) / 2, nx = dx / d, nz = dz / d;
+      a.x -= nx * push; a.z -= nz * push; b.x += nx * push; b.z += nz * push;
+      if (a === player || b === player) bumpCheck(a === player ? b : a);
+    }
+  }
+};
+function charsByX98() {   // everyone, sorted by x once a frame, for the cars to look up who's near them
+  const A = SEP98.cs; A.length = 0;
+  for (const c of chars) { c.sx98 = c.x; A.push(c); }
+  return A.sort(bySx98);
+}
+
+// ── parked cars that nobody's touched: their pose is settled, so look at them now and then, not every frame ──
+const _ucv98 = updateCarVisual;
+updateCarVisual = function (car, dt) {   // eslint-disable-line no-func-assign
+  const still = !car.driver && (!car.ai || car.ai.mode === 'parked') && !car.T.boat && !(car.air > 0) && !car.tumble && !car.flipped && !car.sunk && !car.burning && !car.deadDriver
+    && car.x === car.px98 && car.z === car.pz98 && car.angle === car.pa98 && Math.abs(car.vF || 0) < 1e-3;
+  car.px98 = car.x; car.pz98 = car.z; car.pa98 = car.angle;
+  if (!still) car.still98 = 0;
+  else if ((car.still98 = (car.still98 || 0) + 1) > 30) {
+    car.acc98 = (car.acc98 || 0) + dt; if (car.k98 === undefined) car.k98 = Math.floor(Math.random() * 8);
+    if ((car.still98 + car.k98) % 8) return;
+    dt = car.acc98;
+  }
+  car.acc98 = 0; _ucv98(car, dt);
+};
+
+// ── the traffic lights' colours: four times a second's plenty (they change every few seconds) ──
+const _sig98 = updateSignals; let sigK98 = 0;
+updateSignals = function () { if ((sigK98 = (sigK98 + 1) % 4)) return; _sig98(); };   // eslint-disable-line no-func-assign
+
+// ── the obstacle lookup handed back a new array every call (1,400 a frame): it reuses a ring of them now ──
+const OBSP98 = { a: Array.from({ length: 32 }, () => []), k: 0 };
+obsIn = function (x0, z0, x1, z1) {   // eslint-disable-line no-func-assign
+  const out = OBSP98.a[OBSP98.k = (OBSP98.k + 1) & 31]; out.length = 0; ostamp++;
+  for (let i = Math.floor(x0 / OC), i1 = Math.floor(x1 / OC); i <= i1; i++) for (let j = Math.floor(z0 / OC), j1 = Math.floor(z1 / OC); j <= j1; j++) {
+    const c = ogrid.get(okey(i, j)); if (!c) continue;
+    for (const o of c) if (o.s !== ostamp && !o.dead) { o.s = ostamp; out.push(o); }
+  }
+  return out;
+};
+
+// ── people far off, just walking about, think 20 times a second instead of 60 (you can't tell from 100 m) ──
+function pedTick98(c, dt) {
+  const d = Math.abs(c.x - camera.position.x) + Math.abs(c.z - camera.position.z);
+  if (d < 140 || c.state !== 'walk' || c.target || c.hostile) { c.pdt98 = dt + (c.pacc98 || 0); c.pacc98 = 0; return true; }
+  c.pacc98 = (c.pacc98 || 0) + dt; if (c.pacc98 < 0.05) return false;
+  c.pdt98 = c.pacc98; c.pacc98 = 0; return true;
+}
+
+// ── transforms: hidden things (far chunks, people in cars, the stand-in-ed bodies of distant people) aren't recomputed for the
+//    renderer every frame; anything the game reads itself is still brought up to date where it's read ──
+let skipHid98 = false;
+const _umw98 = THREE.Object3D.prototype.updateMatrixWorld;
+THREE.Object3D.prototype.updateMatrixWorld = function (force) { if (skipHid98 && !this.visible) return; _umw98.call(this, force); };
+const _sumw98 = scene.updateMatrixWorld;
+scene.updateMatrixWorld = function (force) { skipHid98 = true; try { _sumw98.call(this, force); } finally { skipHid98 = false; } };
+
+// ── the city's geometry, stored smaller: colours in 16 bits and normals in 8 instead of 32-bit floats (~600 MB less memory,
+//    and less for the GPU to read per vertex), as each chunk is merged ──
+function compactGeo98(g) {   // a function declaration: the city's chunks are merged long before this block runs
+  const c = g.attributes.color, n = g.attributes.normal;
+  if (c && c.array instanceof Float32Array) {
+    const s = c.array, a = new Uint16Array(s.length); for (let i = 0; i < s.length; i++) a[i] = Math.round((s[i] < 0 ? 0 : s[i] > 1 ? 1 : s[i]) * 65535);
+    g.setAttribute('color', new THREE.BufferAttribute(a, c.itemSize, true)); compactGeo98.saved = (compactGeo98.saved || 0) + s.byteLength - a.byteLength;
+  }
+  if (n && n.array instanceof Float32Array) {
+    const s = n.array, a = new Int8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = Math.round((s[i] < -1 ? -1 : s[i] > 1 ? 1 : s[i]) * 127);
+    g.setAttribute('normal', new THREE.BufferAttribute(a, n.itemSize, true)); compactGeo98.saved = (compactGeo98.saved || 0) + s.byteLength - a.byteLength;
+  }
+  return g;
+}
+
+// ── building the city leaves gigabytes of scratch arrays behind, and the browser can sit on them for minutes (the tab showed
+//    4.5–5.8 GB with ~1.5 GB actually in use). A little short-lived garbage, while the menu's up, gets it to collect them. ──
+function gcNudge98(k = 0) {
+  const m = performance.memory; if (!m || k > 4 || m.usedJSHeapSize < 2.6e9) { LOD98.heapMB = m ? Math.round(m.usedJSHeapSize / 1048576) : 0; return; }
+  let junk = []; for (let i = 0; i < 40; i++) junk.push(new Array(250000).fill(i)); junk = null;
+  setTimeout(() => gcNudge98(k + 1), 400);
+}
+
+// ── the far-off stand-ins for people (a capsule figure each, past ~35 m) were one draw call apiece, ~190 of them: now they're
+//    all one instanced draw, each with its own clothes colours ──
+const SI98 = { mesh: null, max: 320, cols: null, M: null, C: null, on: true };
+const _lodGeo98 = lodGeometry;
+lodGeometry = function (pc, sc, kc, hc, sleeves, shorts) { const g = _lodGeo98(pc, sc, kc, hc, sleeves, shorts); g.userData.si98 = [pc, sc, kc, hc, sleeves, shorts]; return g; };   // eslint-disable-line no-func-assign
+function buildStandins98() {
+  const parts = [   // the same figure the single stand-ins use; the number says which colour each part takes
+    [new THREE.CapsuleGeometry(0.1, 0.5, 2, 6).translate(-0.11, 0.47, 0), 0], [new THREE.CapsuleGeometry(0.1, 0.5, 2, 6).translate(0.11, 0.47, 0), 0],
+    [new THREE.SphereGeometry(0.2, 8, 6).scale(0.95, 0.6, 0.7).translate(0, 0.88, 0), 1],
+    [new THREE.CylinderGeometry(0.22, 0.18, 0.66, 8).scale(1, 1, 0.68).translate(0, 1.22, 0), 2],
+    [new THREE.CapsuleGeometry(0.06, 0.45, 2, 6).translate(-0.31, 1.17, 0), 3], [new THREE.CapsuleGeometry(0.06, 0.45, 2, 6).translate(0.31, 1.17, 0), 3],
+    [new THREE.SphereGeometry(0.14, 10, 8).scale(0.92, 1.1, 1).translate(0, 1.77, 0), 4],
+    [new THREE.SphereGeometry(0.15, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.5).translate(0, 1.8, -0.01), 5],
+  ].map(([g, s]) => { g = g.index ? g.toNonIndexed() : g; g.deleteAttribute('uv'); const n = g.attributes.position.count; g.setAttribute('slot', new THREE.Float32BufferAttribute(new Float32Array(n).fill(s), 1)); g.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(n * 3).fill(1), 3)); return g; });
+  const geo = mergeGeometries(parts), mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
+  const names = ['iLeg', 'iPants', 'iShirt', 'iArm', 'iSkin', 'iHair'];
+  SI98.cols = names.map((nm) => { const a = new THREE.InstancedBufferAttribute(new Float32Array(SI98.max * 3), 3); a.setUsage(THREE.DynamicDrawUsage); geo.setAttribute(nm, a); return a; });
+  mat.onBeforeCompile = (sh) => {
+    sh.vertexShader = 'attribute float slot;\nattribute vec3 ' + names.join(', ') + ';\n' + sh.vertexShader.replace('#include <color_vertex>', `#include <color_vertex>
+      vColor = slot < 0.5 ? iLeg : slot < 1.5 ? iPants : slot < 2.5 ? iShirt : slot < 3.5 ? iArm : slot < 4.5 ? iSkin : iHair;`);
+  };
+  mat.customProgramCacheKey = () => 'standins98';
+  const m = new THREE.InstancedMesh(geo, mat, SI98.max); m.count = 0; m.frustumCulled = false; m.castShadow = false; m.receiveShadow = true; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  scene.add(m); SI98.mesh = m; SI98.M = new THREE.Matrix4(); SI98.C = new THREE.Color();
+}
+function updateStandins98() {
+  if (!SI98.on) return;
+  if (!SI98.mesh) buildStandins98();
+  const m = SI98.mesh, M = SI98.M, C = SI98.C, cols = SI98.cols; let n = 0, dirty = false;
+  for (const c of chars) {
+    const L = c.lod; if (!L || !c.lodOn || !c.mesh.visible || c.mesh.parent !== scene || n >= SI98.max) continue;
+    const a = L.geometry.userData.si98; if (!a) continue;
+    L.visible = false;   // drawn in the batch instead
+    c.mesh.updateMatrix(); L.updateMatrix(); M.multiplyMatrices(c.mesh.matrix, L.matrix); m.setMatrixAt(n, M);
+    if (c.si98n !== n || c.si98g !== L.geometry) {   // their colours, written when their slot changes
+      c.si98n = n; c.si98g = L.geometry; dirty = true;
+      const [pc, sc, kc, hc, sleeves, shorts] = a, hexes = [shorts ? kc : pc, pc, sc, sleeves ? sc : kc, kc, hc];
+      for (let k = 0; k < 6; k++) { C.setHex(hexes[k]); cols[k].setXYZ(n, C.r, C.g, C.b); }
+    }
+    n++;
+  }
+  for (const c of chars) if (c.si98n !== undefined && (!c.lodOn || !c.mesh.visible || c.mesh.parent !== scene)) { if (c.lodOn && c.lod && c.mesh.parent !== scene) c.lod.visible = true; c.si98n = undefined; }
+  if (n !== m.count) dirty = true;
+  m.count = n; m.instanceMatrix.needsUpdate = true; if (dirty) for (const a of cols) a.needsUpdate = true;
+}
+
+// ── small props (bins, signs, lamps, planters...) stop being drawn a few hundred metres out, where they're a few pixels;
+//    anything that glows stays ──
+farCull = function (dt) {   // eslint-disable-line no-func-assign
+  if ((FARCULL.scanT -= dt) <= 0) { FARCULL.scanT = 6; farCullScan(); }
+  if ((FARCULL.t -= dt) > 0) return; FARCULL.t = 0.3;
+  const cx = camera.position.x, cz = camera.position.z, far = scene.fog ? scene.fog.far * 1.06 : 4500, k = settings.gfx === 'high' ? 1.4 : settings.gfx === 'low' ? 0.75 : 1;
+  const s3 = 250 * k, s10 = 450 * k;
+  for (const e of FARCULL.list) {
+    const o = e.o; if (!o.parent) continue;
+    if (e.glow === undefined) { e.glow = false; o.traverse((q) => { const mt = q.material; if (mt && !Array.isArray(mt) && (mt.isMeshBasicMaterial || (mt.emissiveIntensity > 0.4 && mt.emissive && mt.emissive.getHex() !== 0))) e.glow = true; }); }
+    const d = Math.hypot(o.position.x + e.ox - cx, o.position.z + e.oz - cz) - e.r;
+    const off = d > far || (!e.glow && ((e.r < 3 && d > s3) || (e.r < 10 && d > s10)));
+    if (off !== e.off) { e.off = off; o.traverse((q) => q.layers.set(off ? 7 : 0)); }
+  }
+};
+
+// ── the corner map redraws 30 times a second, not 60 (the big map, when it's open, still gets every frame) ──
+const _dmm98 = drawMinimap; let mm98 = 0;
+drawMinimap = function () { if ((mm98 ^= 1) && !mapOpen) return; _dmm98(); };   // eslint-disable-line no-func-assign
 const ARM = { truck: null, nextT: 50 };
 const truckRear = (car) => { const fx = Math.sin(car.angle), fz = Math.cos(car.angle), o = car.T.len / 2 + 0.55; return { x: car.x - fx * o, z: car.z - fz * o }; };
 function addTruckDoors(car) {   // two rear doors on hinges, so they can swing open
@@ -24160,9 +24464,11 @@ function ragBlast(x, y, z, R, power) {   // explosions throw bodies
 }
 
 function carCharCollisions() {
+  const CS = charsByX98();
   for (const car of cars) {
-    const sp = Math.hypot(car.vx, car.vz), fx = Math.sin(car.angle), fz = Math.cos(car.angle), hl = car.T.len / 2, hw = car.T.w / 2;
-    for (const c of chars) {
+    const sp = Math.hypot(car.vx, car.vz), fx = Math.sin(car.angle), fz = Math.cos(car.angle), hl = car.T.len / 2, hw = car.T.w / 2, xa = car.x - hl - 3, xb = car.x + hl + 3;
+    let lo = 0, hi = CS.length; while (lo < hi) { const md = (lo + hi) >> 1; if (CS[md].sx98 < xa) lo = md + 1; else hi = md; }
+    for (let q = lo; q < CS.length && CS[q].sx98 <= xb; q++) { const c = CS[q];
       if (c.inCar || c.ghost || c.inPlane || c.sky || (c.level && c.level.surf82) || Math.abs(c.x - car.x) > hl + 2 || Math.abs(c.z - car.z) > hl + 2) continue;   // build 82: not someone standing up on something (a car's roof)
       const dx = c.x - car.x, dz = c.z - car.z, lz = dx * fx + dz * fz, lx = dx * fz - dz * fx, rr = c.alive ? c.r * 0.85 : 0.3, ex = hw + rr, ez = hl + rr;
       if (Math.abs(lx) >= ex || Math.abs(lz) >= ez) continue;
@@ -27870,7 +28176,7 @@ function updateHUD(dt) {
   setHud('robOn', (v) => (hud.rob.style.display = v ? 'block' : 'none'), !!robbery);
   if (robbery) { setHud('robName', (v) => (hud.robLabel.textContent = v), `ROBBING ${robbery.shop.name}`); hud.robFill.style.width = (robbery.t / CFG.ROB_TIME * 100) + '%'; }
   const lowPulse = P.alive && P.hp < 30 ? 0.25 + Math.sin(clock * 5) * 0.1 : 0;
-  hud.vig.style.opacity = Math.min(1, hurtFlash + lowPulse).toFixed(3);
+  setHud('vig98', (v) => (hud.vig.style.opacity = v), Math.min(1, hurtFlash + lowPulse).toFixed(2));   // build 98: only when it changes
   if (noticeT > 0) { noticeT -= dt; if (noticeT <= 0) hud.notice.classList.remove('show'); }
 }
 
@@ -28685,7 +28991,7 @@ function update(dt) {
     }
     if (c.alive && (c.downT > 0 || c.anim.air > 0 || c.anim.airV > 0 || c.kickT > 0 || c.choked)) moveChar(c, 0, 0, 0, dt);
     else if (c.alive) {
-      if (c.kind === 'ped') updatePed(c, dt);
+      if (c.kind === 'ped') { if (pedTick98(c, dt)) updatePed(c, c.pdt98); }
       else if (c.kind === 'cop') updateCop(c, dt);
       else if (c.kind === 'gang') updateGang(c, dt);
       else if (c.kind === 'clerk') updateClerk(c, dt);
@@ -28822,7 +29128,7 @@ function init() {
   $('bigmapCv').addEventListener('contextmenu', (e) => mapClick(e, true));
   renderStartKeys();
   // Debug handle for the browser console. game.step(n) advances the simulation n frames.
-  window.game = { B97: { PERF97, SC97, makeSC97, corpseGore97, drawDist97 }, CONTRACTS, CONTRACT, acceptContract, B96: { EX96, startSeq96, crewFight96 }, B95: { FLT95, HVA95, standOf95, board95, setupFlight95 }, B94: { PIL94 }, B93: { CK93, camRay93 }, B92: { RAIL92, TR92, RIG92, derail92, addTrailer92, railY92 }, B91: { EV91, startEv91, endEv91, BAR91, rhythm: () => rhythm() }, B90: { ST90, SC90, startStand90, breach90, say90, makeSC90, CONTRACTS, CONTRACT, acceptContract }, B89: { PL89, PUR89, plate89, chopNear89, perimeter89, camSetup89, chopSetup89 }, B88: { INJ88, BLEACH88, treat88, doc88, clean88, wounded88 }, B87: { WEAPONS, IMP87, FIRE87, SHIELD87, fireAt87, ignite87, impHold87, impSpot87, pen87 }, B86: { REC86, onFile86, findDelay86, cases86 }, STATS, CASES, WARRANT, B85: { CK85, AIM85, ck85Restore, safeSpot85, gunImpact85, bombImpact85, shellImpact85, revive85 }, B84: { PADS84, BLOCK84, patrolBlock84, padsSetup84, padOwner84, padHeli84 }, B83: { DISP83, dispatchStart83, nearestPost83, postSpawn83, heliOrigin83 }, B82: { VAULT82, SURF82, GRASS82, RUIN82, ROADS82, surfAt82, mantle82, ruinY82, vaultSetup82 }, B81: { AIR80, RPG80, CKPT80, SEARCH80, jetSpawn80, groundT80, underCover80, descMatch80, ckptTake80, bombBlast80, carGuard80, dropBomb80, armPlane80, updateSearch80, CAMP80: () => CAMP80, ROB80: () => ROB80 }, B79: { step: (n, dt = 1 / 60) => { for (let k = 0; k < n; k++) { update(dt); pressed.clear(); updateCamera(dt); } composer.render(); }, bldPal79, bldGrid79, WIT79, FIND79, wit79Pick, updateWit79, roadNear79, copBld79, copHouse79, victimId79, newsHTML79, CAM79, SUB79, sub79L2W, sub79W2L, subHall79 }, B77: { losClear: (a, b, c, d) => losClear(a, b, c, d), rayObstacles: (a, b, c, d, e, f) => rayObstacles(a, b, c, d, e, f), sleepRayT: (c, a, b, d, e, f) => sleepRayT(c, a, b, d, e, f), onRoofTop: () => onRoofTop(), eForBody, eSpot, carryWin, grassBlocked, POL77, polCount77, ragCeil, nearWin, nearBody, setCam: (y, p) => { camYaw = y; camPitch = p; }, heat: () => heat, stars: () => stars(), damageChar: (c, d, s) => damageChar(c, d, s) }, HAND76, GRAB76, HB, ragSelfTest: () => ({ RS, RS_SEGS }), BLOODT: { addDecal: (...a) => addDecal(...a), addHole: (...a) => addHole(...a), decal: () => decalMesh, wall: () => wallBloodMesh, clearWounds: (c) => clearWounds(c), respawn: () => respawn() }, CQ, FIN, startFin: (T) => startFin(T), cqTarget: () => cqTarget(), startDive: (x, z) => startDive(x, z), parry: (c) => parry(c), npcPunch: (c) => punch(c, WEAPONS[c.weapon], 1), WARDR, SAFEDECO, wardSpot: () => wardSpot(), openWard: (W) => openWard(W), closeWard: () => closeWard(), buildSafeDecor: () => buildSafeDecor(), PAPERS, DORIS, IDC, openPapers: (r) => openPapers(r), dorisTalk: () => dorisTalk(), hankTalk: () => hankTalk(), nearHank: () => nearHank(), nearDoris: () => nearDoris(), payday: () => payday(), DET, COVER, FORGER, detStart: () => detStart(), plantAtScene: (C) => plantAtScene(C), frameSpot: () => frameSpot(), frameHouse: (f) => frameHouse(f), buyIdentity: () => buyIdentity(), rentHouse: (i) => rentHouse(i), applyJob: () => applyJob(), workRest: () => workRest(), coverAction: () => coverAction(), doCover: (a) => doCover(a), sheriffSearch: () => sheriffSearch(), storeOf: () => storeOf(), atWork: () => atWork(), FENCES, SO, MG, FACE, schedMode: (H, h, d) => schedMode(H, h, d), stakeWait: (h) => stakeWait(h), cutPower: (H) => cutPower(H), openMG: (a) => openMG(a), holdAction: () => holdAction(), fenceSell: () => fenceSell(), nearFence: () => nearFence(), sensorAim: () => sensorAim(), NB, SENS, routineMode: (H) => routineMode(H), dateStr: () => dateStr(), hideNear: () => hideNear(), enterHide: (S) => enterHide(S), exitHide: () => exitHide(), countryRoadblock: () => countryRoadblock(), neighbourNoise: (x, z, l) => neighbourNoise(x, z, l), TRACK, VALLEY_RD, LAKE_RD, BACK_RD, roadsideN: () => ROADSIDE_N, COPB, copBranch: (x, z) => copBranch(x, z), IDOORS, homeWay: (c, x, z) => homeWay(c, x, z), spawnSleepers: (H) => spawnSleepers(H), wakeHome: (H) => wakeHome(H), idoorToggle: () => idoorToggle(), sleepK: (H) => sleepK(H), curHome: () => curHome(), WILDA, NPASS, SCOAST, interiorAtf: (x, z) => interiorAt(x, z), HAVEN, HAVEN_ROAD, spawnCop, groundYf: (x, z) => groundY(x, z), terrainHf: (x, z) => terrainH(x, z), RACE64, STATS, PROPS, RESPRAY, OUTFITS, buyProp, startRace, endRace, raceMeet, callLawyer, doRespray, buyOutfit, buyDrink, sleepAt, prompt64, renderPhone: () => renderPhone(), phoneAct: (a, b) => phoneAct(a, b), cp: () => computePrompt(), pois: () => mapPOIs(), NQ, CIVIC, costumeShop: () => costumeShop, seenNow: () => seenNow, deathKind: () => deathKind, seat(car) { const P = player; car.driver = P; car.parked = false; car.ai = null; P.inCar = car; }, MIL, PURSUIT, triggerMilitary, ARREST, CITY63, bustTGet: () => bustT, lostTGet: () => lostT, climbSpot, vaultSpot, hitSkyline, interiorAt, damageHeli, heliRoof, addHeat, starsN: () => stars(), indoorBox, togglePhone, HFIRES, PHONE, PROFILE, PUPS, WARRANT, PRESS, gt, issueWarrant, renderer, scene, obsIn, HEISTS, HEIST, HB, planHeist, HPROPS, CASE, BANK, jewelers, CASES, NCRIME, startNpcCrime, hitReact, findWallCover, shops, settings, ramCabin, sawCut, wallCrash, PAUSEDRAW, PUP, crashFlip, shatterCarGlass, carGeo: carGeometry, binds, pose, seatPuppet, SIT_DRV, dropPuppets,
+  window.game = { B98: { PROF98, LOD98, buildLod98, lodDist98, SI98, SKYG98, get composer() { return composer; }, get sun() { return sun; } }, B97: { PERF97, SC97, makeSC97, corpseGore97, drawDist97 }, CONTRACTS, CONTRACT, acceptContract, B96: { EX96, startSeq96, crewFight96 }, B95: { FLT95, HVA95, standOf95, board95, setupFlight95 }, B94: { PIL94 }, B93: { CK93, camRay93 }, B92: { RAIL92, TR92, RIG92, derail92, addTrailer92, railY92 }, B91: { EV91, startEv91, endEv91, BAR91, rhythm: () => rhythm() }, B90: { ST90, SC90, startStand90, breach90, say90, makeSC90, CONTRACTS, CONTRACT, acceptContract }, B89: { PL89, PUR89, plate89, chopNear89, perimeter89, camSetup89, chopSetup89 }, B88: { INJ88, BLEACH88, treat88, doc88, clean88, wounded88 }, B87: { WEAPONS, IMP87, FIRE87, SHIELD87, fireAt87, ignite87, impHold87, impSpot87, pen87 }, B86: { REC86, onFile86, findDelay86, cases86 }, STATS, CASES, WARRANT, B85: { CK85, AIM85, ck85Restore, safeSpot85, gunImpact85, bombImpact85, shellImpact85, revive85 }, B84: { PADS84, BLOCK84, patrolBlock84, padsSetup84, padOwner84, padHeli84 }, B83: { DISP83, dispatchStart83, nearestPost83, postSpawn83, heliOrigin83 }, B82: { VAULT82, SURF82, GRASS82, RUIN82, ROADS82, surfAt82, mantle82, ruinY82, vaultSetup82 }, B81: { AIR80, RPG80, CKPT80, SEARCH80, jetSpawn80, groundT80, underCover80, descMatch80, ckptTake80, bombBlast80, carGuard80, dropBomb80, armPlane80, updateSearch80, CAMP80: () => CAMP80, ROB80: () => ROB80 }, B79: { step: (n, dt = 1 / 60) => { for (let k = 0; k < n; k++) { update(dt); pressed.clear(); updateCamera(dt); } composer.render(); }, bldPal79, bldGrid79, WIT79, FIND79, wit79Pick, updateWit79, roadNear79, copBld79, copHouse79, victimId79, newsHTML79, CAM79, SUB79, sub79L2W, sub79W2L, subHall79 }, B77: { losClear: (a, b, c, d) => losClear(a, b, c, d), rayObstacles: (a, b, c, d, e, f) => rayObstacles(a, b, c, d, e, f), sleepRayT: (c, a, b, d, e, f) => sleepRayT(c, a, b, d, e, f), onRoofTop: () => onRoofTop(), eForBody, eSpot, carryWin, grassBlocked, POL77, polCount77, ragCeil, nearWin, nearBody, setCam: (y, p) => { camYaw = y; camPitch = p; }, heat: () => heat, stars: () => stars(), damageChar: (c, d, s) => damageChar(c, d, s) }, HAND76, GRAB76, HB, ragSelfTest: () => ({ RS, RS_SEGS }), BLOODT: { addDecal: (...a) => addDecal(...a), addHole: (...a) => addHole(...a), decal: () => decalMesh, wall: () => wallBloodMesh, clearWounds: (c) => clearWounds(c), respawn: () => respawn() }, CQ, FIN, startFin: (T) => startFin(T), cqTarget: () => cqTarget(), startDive: (x, z) => startDive(x, z), parry: (c) => parry(c), npcPunch: (c) => punch(c, WEAPONS[c.weapon], 1), WARDR, SAFEDECO, wardSpot: () => wardSpot(), openWard: (W) => openWard(W), closeWard: () => closeWard(), buildSafeDecor: () => buildSafeDecor(), PAPERS, DORIS, IDC, openPapers: (r) => openPapers(r), dorisTalk: () => dorisTalk(), hankTalk: () => hankTalk(), nearHank: () => nearHank(), nearDoris: () => nearDoris(), payday: () => payday(), DET, COVER, FORGER, detStart: () => detStart(), plantAtScene: (C) => plantAtScene(C), frameSpot: () => frameSpot(), frameHouse: (f) => frameHouse(f), buyIdentity: () => buyIdentity(), rentHouse: (i) => rentHouse(i), applyJob: () => applyJob(), workRest: () => workRest(), coverAction: () => coverAction(), doCover: (a) => doCover(a), sheriffSearch: () => sheriffSearch(), storeOf: () => storeOf(), atWork: () => atWork(), FENCES, SO, MG, FACE, schedMode: (H, h, d) => schedMode(H, h, d), stakeWait: (h) => stakeWait(h), cutPower: (H) => cutPower(H), openMG: (a) => openMG(a), holdAction: () => holdAction(), fenceSell: () => fenceSell(), nearFence: () => nearFence(), sensorAim: () => sensorAim(), NB, SENS, routineMode: (H) => routineMode(H), dateStr: () => dateStr(), hideNear: () => hideNear(), enterHide: (S) => enterHide(S), exitHide: () => exitHide(), countryRoadblock: () => countryRoadblock(), neighbourNoise: (x, z, l) => neighbourNoise(x, z, l), TRACK, VALLEY_RD, LAKE_RD, BACK_RD, roadsideN: () => ROADSIDE_N, COPB, copBranch: (x, z) => copBranch(x, z), IDOORS, homeWay: (c, x, z) => homeWay(c, x, z), spawnSleepers: (H) => spawnSleepers(H), wakeHome: (H) => wakeHome(H), idoorToggle: () => idoorToggle(), sleepK: (H) => sleepK(H), curHome: () => curHome(), WILDA, NPASS, SCOAST, interiorAtf: (x, z) => interiorAt(x, z), HAVEN, HAVEN_ROAD, spawnCop, groundYf: (x, z) => groundY(x, z), terrainHf: (x, z) => terrainH(x, z), RACE64, STATS, PROPS, RESPRAY, OUTFITS, buyProp, startRace, endRace, raceMeet, callLawyer, doRespray, buyOutfit, buyDrink, sleepAt, prompt64, renderPhone: () => renderPhone(), phoneAct: (a, b) => phoneAct(a, b), cp: () => computePrompt(), pois: () => mapPOIs(), NQ, CIVIC, costumeShop: () => costumeShop, seenNow: () => seenNow, deathKind: () => deathKind, seat(car) { const P = player; car.driver = P; car.parked = false; car.ai = null; P.inCar = car; }, MIL, PURSUIT, triggerMilitary, ARREST, CITY63, bustTGet: () => bustT, lostTGet: () => lostT, climbSpot, vaultSpot, hitSkyline, interiorAt, damageHeli, heliRoof, addHeat, starsN: () => stars(), indoorBox, togglePhone, HFIRES, PHONE, PROFILE, PUPS, WARRANT, PRESS, gt, issueWarrant, renderer, scene, obsIn, HEISTS, HEIST, HB, planHeist, HPROPS, CASE, BANK, jewelers, CASES, NCRIME, startNpcCrime, hitReact, findWallCover, shops, settings, ramCabin, sawCut, wallCrash, PAUSEDRAW, PUP, crashFlip, shatterCarGlass, carGeo: carGeometry, binds, pose, seatPuppet, SIT_DRV, dropPuppets,
     player: () => player, skyscrapers, nearElevator, rideElevator, nearDoor, setDoor, chars, cars, shops, landmarks, keys, mouse, get stars() { return stars(); }, addHeat,
     setHeat(v) { heat = v; lostT = 0; }, setFP(v) { fpMode = v; }, weather, setWeather(st) { weather.t = 0; const r = Math.random; Math.random = () => (st === 'rain' ? 0.1 : st === 'overcast' ? 0.5 : 0.9); updateWeather(0); Math.random = r; weather.cloud = weather.target.cloud; weather.rain = weather.target.rain; weather.wet = st === 'rain' ? 1 : 0; }, jewelers, homes, get costumeShop() { return costumeShop; }, setMask, buyMask, interiorAt, smashCase, nearCase, get maskedCrime() { return maskedCrime; }, MT, HWY, LAKES, MBASE, AIRPORT, ragdolls, mtH, damageChar, explodeAt, ragStart, get airTraffic() { return airTraffic; }, planes, AIR, BASE, RUNWAY, CAUSE, POIS, SPOTS, dogs, enterPlane, exitPlane, get baseAlarm() { return baseAlarm; }, regionOf, SKYLINE, get planeLock() { return planeLock; }, corpseInFront, corpseHit, ISL, BRIDGE, LOOP, islandH, onIsland, spawnIslandPed, spawnIslandCar, terrainH, groundY, incidents, get ambulance() { return ambulance; }, makeInjured, spawnAmbulance, RAMPS, PIER, get copProvokedT() { return copProvokedT; }, copAttackers, tryEnterCar, get para() { return para; }, binds, settings, bars, interiors, rockets, get lockT() { return lockT; }, get gameHour() { return gameHour; }, setHour(h) { gameHour = h; }, toggleMap, get wheelOpen() { return wheelOpen; }, get job() { return job; }, startJob, offerJob, get seenNow() { return seenNow; }, spawnRoadblock, barrels, grenades, get shopOpen() { return shopOpen; }, get deathKind() { return deathKind; }, get heli() { return heli; },
     ARM, spawnArmored, armoredStop, TGT, targetInfo, createCar, exitCar, TAXI, WARDEN, COPS, spikes, layStrip, FENCE, fenceSpot, fenceSell, BANK, setWaypoint(x, z) { waypoint = x == null ? null : { x, z }; }, spawnTraffic,

@@ -43,7 +43,50 @@ Then open <http://localhost:8123>, or <http://localhost:8123/?mute> to start wit
 
 ---
 
-## 2zz15. Latest update (build 97): why it ran hot and looked blurry, gore on bodies, contracts rewritten
+## 2zz16. Latest update (build 98): why a low-poly game ran hot, a profiler, and simplified far buildings
+
+**Why it ran hot (measured with a per-system profiler, a GPU timer query, and heap readings):** the GPU was not the problem. Under steady load it needed about 4 ms a frame at pixel ratio 1.3, and bloom plus the grade pass cost under 0.5 ms. The heat came from the CPU, on the main thread:
+- **Simulating the whole map every frame.** Around 240 people and 220 cars were updated 60 times a second, wherever they were. Some of it was done the slow way:
+  - `hitSkyline` scanned all 2,700 buildings linearly, about 150 times a frame (1.5 ms; mostly the car-in-a-building guard `carGuard80`);
+  - `separateChars` tested every pair of people (29,000 pairs);
+  - `carCharCollisions` tested every car against every person (50,000 pairs);
+  - parked cars nobody had touched re-ran ground sampling and pose every frame;
+  - traffic-light colours were recomputed every frame (3,500 calls);
+  - `obsIn` allocated a new array on each of its ~1,400 calls a frame.
+- **Transforms.** The scene had 22,000 objects, and three.js recomputed every one each frame, hidden or not (2.3 ms). That includes about 8,000 hidden rig parts on distant people drawn as stand-ins.
+- **Draw calls.** About 900 at street level and 1,600 in the air, each costing far more CPU through WebGL (ANGLE → Metal) than in a native engine. About 190 were the one-mesh stand-ins for distant people, and about 270 were small props hundreds of metres away.
+- **Memory.** The city's merged geometry was 42 million unindexed vertices, all 32-bit floats: 1.74 GB in JavaScript plus a GPU copy. The tab also sat on 4–6 GB of load-time scratch arrays that the browser didn't collect.
+- **Why other games run cooler:** native engines simulate only what's near you, spread work across threads, use draw-call-cheap APIs, and stream LOD meshes. A single-threaded browser game that simulates and draws a whole city at 60 fps keeps one core and the GPU process busy the whole time.
+
+**What changed:**
+- **Profiler (`PROF98`):** times update, render, overlay, minimap, HUD and camera per frame. It also reads a GPU timer (`EXT_disjoint_timer_query_webgl2`, only while F3 is up) and the JS garbage rate. F3 shows it all.
+- **Simplified far buildings (`LOD98`):**
+  - Static city geometry now merges into 176 m tiles (`PIECE_TILE` 1).
+  - `cullChunks` draws a city tile in full only within 300 m (medium; low 220, high 420; in the air 340/260/480). Past that, one merged mesh of plain boxes takes over: walls and roofs in facade colours, plus an asphalt grid and pavement, sand or grass blocks. It's a single draw call.
+  - A 96×96 tile texture tells the box mesh's vertex shader which tiles to drop where the full detail is showing.
+  - Rebuilt when a building collapses. Havenport and everything outside the city keep their own culling.
+- **CPU:**
+  - A 32 m grid for `hitSkyline`, checked identical to the linear scan on 44,000 samples and about 70× faster.
+  - Sort-and-sweep for `separateChars`, and a binary-searched sorted list for `carCharCollisions`.
+  - Settled parked cars refresh their visuals every 8th frame.
+  - Traffic lights update every 4th frame.
+  - `obsIn` reuses a ring of 32 arrays; the one caller that keeps its result (the ruin snapshot) copies it.
+  - People more than ~140 m away who are just walking think at 20 Hz (`pedTick98`).
+  - The corner minimap draws at 30 Hz.
+  - The hurt vignette writes its style only when it changes.
+- **Transforms:** during the renderer's scene update, hidden subtrees are skipped (`skipHid98`). The game's own reads, such as ragdoll start and wound raycasts, still call `updateMatrixWorld(true)` and get full updates. City chunks have `matrixAutoUpdate` off.
+- **Stand-ins:** all distant people are drawn as one `InstancedMesh` (`SI98`), with per-instance clothes, skin and hair colours chosen in the vertex shader by part.
+- **Props:** `farCull` also hides small props: under 3 m across past 250 m, under 10 m past 450 m (×1.4 on high, ×0.75 on low). Anything that glows is kept.
+- **Memory:** chunk colours are stored as 16-bit and normals as 8-bit normalized attributes, as each chunk is merged (−523 MB). A short garbage nudge while the menu is up gets the browser to release the load-time scratch arrays; the tab drops from ~4.5–5.8 GB to ~1.5 GB.
+- **Results (same spots, build 97 → 98):**
+  - game logic per frame: street 5.5 → 2.9 ms; air 2.1 → 1.5 ms;
+  - transforms: 2.3 → ~0.3–1.2 ms;
+  - render CPU: 5.1 → 3.1–3.7 ms;
+  - triangles: street 3.6M → 2.5M; air 6.3M → 3.2M;
+  - draw calls: street ~906 → 730–810; air 1,596 → 1,051.
+  - The per-system costs that were fixed dropped 70–97%: `carGuard80` 1.46 → 0.04 ms, `carCharCollisions` 0.82 → 0.12, the heists/homes chain 2.29 → 0.72.
+
+## 2zz15. Update (build 97): why it ran hot and looked blurry, gore on bodies, contracts rewritten
 
 **Performance investigation** (measured with `renderer.info` at the start position):
 - **Before:**
