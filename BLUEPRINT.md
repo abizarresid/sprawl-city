@@ -43,7 +43,22 @@ Then open <http://localhost:8123>, or <http://localhost:8123/?mute> to start wit
 
 ---
 
-## 2zz16. Latest update (build 98): why a low-poly game ran hot, a profiler, and simplified far buildings
+## 2zz17. Latest update (build 99): a battery saver that switches itself on, and fixes from a glitch-hunt playtest
+
+**Battery saver (`BATT99`):** when the laptop is unplugged, the frame rate drops to the "When unplugged" setting: 30 fps, 40 fps (the default) or no limit. It shows a short notice when it kicks in. It uses `navigator.getBattery()`, so it works in Chrome and Edge. Safari doesn't report the battery; the settings row says so and points to the 40 fps checkbox. The setting is wired once the page has loaded (`wireBatt99`), so it also works from the start screen.
+
+**From the build-98 playtest:**
+- **Far city at night:** the night glow on the simplified buildings covered the whole far mesh, so the far ground lit up as a flat tan sheet. Now only the walls glow: an `aGlow` vertex attribute masks `totalEmissiveRadiance` in the shader. The glow is also dimmer (0.11/0.09/0.055 × `nightK`).
+- **Half buildings at the detail switch:** 507 buildings straddle a 176 m tile edge. Each far box now carries the tiles of its footprint corners (`aTiles`) and is only dropped when all of them are in full detail. Where only part of a building's detailed pieces are drawn, the box fills in the rest.
+- **A road out west vanished while you stood on it:** a merged chunk running from x −875 to −230 and z 20 to 1133 had its middle inside the city and was swapped by a city tile. Chunks over 300 m across, or reaching more than 60 m past the sea wall, now keep the old fog cull.
+- **Roads that weren't there:** the far ground used to lay asphalt everywhere. Now each block cell is asphalt plus pavement for normal blocks, grass for wild blocks (no roads through open land) and sand for beach blocks. The strip between the last road and the sea wall is paving.
+- **Westbrook houses inside the plaza shops, with their driveway cars inside the Mart and the pharmacy:** the plaza skip was on the wrong side of the street (`side > 0` for the z = −110 street). Fixed. The houses' seeded layout shifts as a result.
+- **Spawn:** the player now starts at x = 16 instead of 9, so the corner street-sign pole isn't between the camera and the player.
+- **Not changed:** the sky sphere doesn't follow the debug-only `game.cam()` override.
+
+**Measured:** street 621 draw calls / 2.5M triangles; air 1,152 calls / 3.2M triangles; game logic 2.8 ms per frame.
+
+## 2zz16. Update (build 98): why a low-poly game ran hot, a profiler, and simplified far buildings
 
 **Why it ran hot (measured with a per-system profiler, a GPU timer query, and heap readings):** the GPU was not the problem. Under steady load it needed about 4 ms a frame at pixel ratio 1.3, and bloom plus the grade pass cost under 0.5 ms. The heat came from the CPU, on the main thread:
 - **Simulating the whole map every frame.** Around 240 people and 220 cars were updated 60 times a second, wherever they were. Some of it was done the slow way:

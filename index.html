@@ -338,7 +338,7 @@
 
 <div id="start" class="screen">
   <h1>SPRAWL CITY</h1>
-  <div class="sub">OPEN-WORLD CRIME SANDBOX · SINGLE PLAYER · BUILD 98 (Nov 23)</div>
+  <div class="sub">OPEN-WORLD CRIME SANDBOX · SINGLE PLAYER · BUILD 99 (Nov 24)</div>
   <div class="keys">
     <div><kbd>WASD</kbd> move · <kbd>Shift</kbd> sprint</div><div><kbd>Mouse</kbd> look (captured while playing)</div>
     <div><kbd>LMB</kbd> shoot / punch · <kbd>RMB</kbd> aim</div><div><kbd>V</kbd> kick · <kbd>R</kbd> reload</div>
@@ -364,6 +364,7 @@
     <div class="setrow"><label><input id="forgive" type="checkbox"> Forgiving aim (shots that pass close to someone still hit them). Off: precise free aim, a miss is a miss</label></div>
     <div class="setrow"><label><input id="snapCover" type="checkbox"> Snap to cover (crouch beside a wall or a car to stick to it)</label></div>
     <div class="setrow"><label><input id="gore" type="checkbox"> Gore (heads and limbs can come off)</label></div>
+    <div class="setrow"><label>When unplugged: <select id="batt99"><option value="30">30 fps</option><option value="40" selected>40 fps</option><option value="off">no limit</option></select></label><span id="batt99n" style="opacity:.7"></span></div>
     <div class="setrow"><label><input id="cool97" type="checkbox"> Battery saver: cap at 40 fps (runs cooler and quieter)</label></div>
     <div class="setrow"><label><input id="planeTake96" type="checkbox"> Let me take the shuttle airliner (on the ground only; the crew try to stop you)</label></div>
     <div class="setrow">Graphics <select id="gfx"><option value="low">Low (fastest)</option><option value="medium">Medium</option><option value="high">High (ambient occlusion)</option></select> <span id="fpsV"></span></div>
@@ -10812,7 +10813,7 @@ function buildWestbrook() {
     const cz = zs + side * 15, face = side < 0 ? 1 : -1;
     for (let x = -1015; x <= -800; x += 23) {
       if (Math.abs(x + 905) < 18) continue;
-      if (zs === WB_ZS[0] && side < 0 && x < -895) continue;   // that's the plaza
+      if (zs === WB_ZS[0] && side > 0 && x < -895) continue;   // that's the plaza (build 99: the right side of the street)
       if (cz < WB.z0 - 6 || farmCell(x, cz - 6)) continue;
       const two = srand() < 0.5;
       cedarHouse(x + rand(-1.5, 1.5), cz, face, 10 + srand() * 2, 8.5 + srand(), two, spick(WB_HOUSE_COLS));
@@ -13947,7 +13948,7 @@ renderPhone = function () {   // eslint-disable-line no-func-assign
 };
 (() => { const st = document.createElement('style'); st.textContent = '#phone .bd { scroll-behavior: auto !important; } #phone { max-height: calc(100vh - 32px) !important; }'; document.head.appendChild(st); })();
 
-function updateBuild66(dt) { updateIDoors(dt); updateSleepers(dt); houseWinGround(); updateCopHud(dt); homeLife(dt); updateHomeGlow(dt); updateBuild67(dt); updateBuild68(dt); updateBuild69(dt); updateBuild69b(dt); updateBuild70(dt); updateBuild71(dt); updateBuild74(dt); updateBuild75(dt); updateBuild76(dt); updateBuild77(dt); updateBuild79(dt); updateBuild81(dt); updateBuild81b(dt); updateBuild82(dt); updateDispatch83(); updateBuild84(dt); updateBuild85(dt); updateBuild86(dt); updateBuild87(dt); updateBuild88(dt); updateBuild89(dt); updateBuild90(dt); updateBuild91(dt); updateBuild92(dt); updateBuild93(dt); updateBuild94(dt); updateBuild95(dt); updateBuild96(dt); updateBuild97(dt); updateBuild98(dt); }
+function updateBuild66(dt) { updateIDoors(dt); updateSleepers(dt); houseWinGround(); updateCopHud(dt); homeLife(dt); updateHomeGlow(dt); updateBuild67(dt); updateBuild68(dt); updateBuild69(dt); updateBuild69b(dt); updateBuild70(dt); updateBuild71(dt); updateBuild74(dt); updateBuild75(dt); updateBuild76(dt); updateBuild77(dt); updateBuild79(dt); updateBuild81(dt); updateBuild81b(dt); updateBuild82(dt); updateDispatch83(); updateBuild84(dt); updateBuild85(dt); updateBuild86(dt); updateBuild87(dt); updateBuild88(dt); updateBuild89(dt); updateBuild90(dt); updateBuild91(dt); updateBuild92(dt); updateBuild93(dt); updateBuild94(dt); updateBuild95(dt); updateBuild96(dt); updateBuild97(dt); updateBuild98(dt); updateBuild99(dt); }
 // ═════════ Build 66: three police forces, each marked. Sprawl City PD in the city, Havenport PD in Havenport,
 //   the Highway Patrol everywhere in between: their own uniforms, their own cars, their own radio ═════════
 const COPB = {
@@ -20963,12 +20964,12 @@ cullChunks = function (dt) {   // eslint-disable-line no-func-assign
     if (m.userData.detail) v = d < dfar;
     else if (haven.has(m) || !LOD98.built) v = d < far;
     else {
-      if (m.userData.t98 === undefined) { const bb = m.geometry.boundingBox, x = (bb.min.x + bb.max.x) / 2, z = (bb.min.z + bb.max.z) / 2, t = tileOf98(x, z); m.userData.t98 = Math.abs(x) < WORLD && Math.abs(z) < WORLD ? t[1] * NT + t[0] : -1; }
+      if (m.userData.t98 === undefined) { const bb = m.geometry.boundingBox, x = (bb.min.x + bb.max.x) / 2, z = (bb.min.z + bb.max.z) / 2, t = tileOf98(x, z); m.userData.t98 = Math.abs(x) < WORLD && Math.abs(z) < WORLD && bb.max.x - bb.min.x < 300 && bb.max.z - bb.min.z < 300 && bb.min.x > -WORLD - 60 && bb.max.x < WORLD + 60 && bb.min.z > -WORLD - 60 && bb.max.z < WORLD + 60 ? t[1] * NT + t[0] : -1; }
       v = d < far && (m.userData.t98 < 0 || D[m.userData.t98 * 4] === 255);   // outside the city: as before
     }
     if (m.visible !== v) m.visible = v;
   }
-  if (LOD98.mat) LOD98.mat.emissive.setRGB(0.16 * nightK, 0.13 * nightK, 0.08 * nightK);   // lit windows, from a distance, at night
+  if (LOD98.mat) LOD98.mat.emissive.setRGB(0.11 * nightK, 0.09 * nightK, 0.055 * nightK);   // lit windows, from a distance, at night
 };
 function updateBuild98(dt) { updateStandins98(); profTick98(dt); }
 
@@ -21165,6 +21166,83 @@ farCull = function (dt) {   // eslint-disable-line no-func-assign
 // ── the corner map redraws 30 times a second, not 60 (the big map, when it's open, still gets every frame) ──
 const _dmm98 = drawMinimap; let mm98 = 0;
 drawMinimap = function () { if ((mm98 ^= 1) && !mapOpen) return; _dmm98(); };   // eslint-disable-line no-func-assign
+// ═════════ Build 99: an automatic battery saver (unplugged: the frame rate drops to the cap you pick), and glitch fixes ═════════
+const BATT99 = { asked: false, b: null, unplugged: false, ui: false, told: false };
+function battCap99() {   // the frame cap when running on battery (0 = no change)
+  if (!BATT99.unplugged) return 0;
+  const v = settings.batt99 ?? '40'; return v === 'off' ? 0 : +v;
+}
+function wireBatt99() {   // once the page has loaded (settings exist by then): ask the battery, hook up the menu
+  if (!BATT99.asked) {
+    BATT99.asked = true;
+    if (navigator.getBattery) navigator.getBattery().then((b) => {
+      BATT99.b = b; const f = () => { BATT99.unplugged = !b.charging; BATT99.told = false; }; f(); b.addEventListener('chargingchange', f);
+    }).catch(() => {});
+  }
+  const el = document.getElementById('batt99');
+  if (el && !BATT99.ui) { BATT99.ui = true; el.value = settings.batt99 ?? '40'; el.addEventListener('change', (e) => { settings.batt99 = e.target.value; saveSettings(); BATT99.told = false; }); }
+  const n = document.getElementById('batt99n'); if (n) n.textContent = navigator.getBattery ? '' : ' (this browser doesn\u2019t report the battery: use the 40 fps cap below instead)';
+}
+setTimeout(function w99() { try { wireBatt99(); } catch (e) { setTimeout(w99, 300); } }, 0);
+function updateBatt99() {
+  if (started && !BATT99.told && BATT99.b) { BATT99.told = true; const c = battCap99(); if (c) notify(`On battery: capped at <b>${c} fps</b> to save power (change it in Settings).`, 3.5); }
+}
+function updateBuild99(dt) { updateBatt99(); }
+
+// ── the far city, redone from the playtest: windows glow at night but the ground and roofs don't; a building's box stays up
+//    until every tile it touches is in full detail (no half buildings at the switch); real ground under the far blocks
+//    (no roads through the open fields or on the beach) ──
+buildLod98 = function () {   // eslint-disable-line no-func-assign
+  const pos = [], col = [], tiles = [], glow = [], c = new THREE.Color(), shrink = 0.35;
+  const quad = (ax, ay, az, bx, by, bz, cx, cy, cz, dx, dy, dz, hex, t0, t1, gl) => {
+    c.setHex(hex);
+    for (const p of [[ax, ay, az], [bx, by, bz], [cx, cy, cz], [ax, ay, az], [cx, cy, cz], [dx, dy, dz]]) { pos.push(p[0], p[1], p[2]); col.push(c.r, c.g, c.b); tiles.push(t0[0], t0[1], t1[0], t1[1]); glow.push(gl); }
+  };
+  for (let i = 0; i < LOD98.n0; i++) {
+    const o = SKYLINE[i]; if (o.ruin || o.sky) continue;
+    const w = o.x1 - o.x0, d = o.z1 - o.z0; if (w < 3 || d < 3 || (!o.tower && o.flatY === undefined && (w < 8 || d < 8))) continue;
+    const cx = (o.x0 + o.x1) / 2, cz = (o.z0 + o.z1) / 2; if (Math.abs(cx) > WORLD || Math.abs(cz) > WORLD) continue;
+    const y0 = o.bot ?? ((o.base ?? terrainH(cx, cz)) + (o.y0 || 0)), y1 = o.top - shrink; if (y1 - y0 < 2.5) continue;
+    const x0 = o.x0 + shrink, x1 = o.x1 - shrink, z0 = o.z0 + shrink, z1 = o.z1 - shrink, base = o.col98 ?? LODCOL98[o.facade] ?? 0xa8a296;
+    const ta = tileOf98(o.x0, o.z0), tb = tileOf98(o.x1, o.z1);
+    const wall = new THREE.Color(base).multiplyScalar(0.72).getHex(), roof = new THREE.Color(base).multiplyScalar(0.56).getHex();
+    quad(x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1, wall, ta, tb, 1); quad(x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0, wall, ta, tb, 1);
+    quad(x1, y0, z1, x1, y0, z0, x1, y1, z0, x1, y1, z1, wall, ta, tb, 1); quad(x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0, wall, ta, tb, 1);
+    quad(x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, y1, z0, roof, ta, tb, 0);
+  }
+  const h = (x, z, up) => terrainH(x, z) + up;
+  const flat = (x0, z0, x1, z1, up, hex) => { const t = tileOf98((x0 + x1) / 2, (z0 + z1) / 2); quad(x0, h(x0, z1, up), z1, x1, h(x1, z1, up), z1, x1, h(x1, z0, up), z0, x0, h(x0, z0, up), z0, hex, t, t, 0); };
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {   // each block's cell (the block and half the road round it)
+    const ax = -HALF + i * B, az = -HALF + j * B, bk = i * N + j;
+    if (BEACH[bk]) { flat(ax, az, ax + B, az + B, 0.08, 0xcdbf98); continue; }
+    if (WILDA[bk]) { flat(ax, az, ax + B, az + B, 0.08, 0x6f8a55); continue; }   // open land: no roads through it
+    flat(ax, az, ax + B, az + B, 0.05, 0x4b4c50);
+    flat(ax + R / 2, az + R / 2, ax + B - R / 2, az + B - R / 2, 0.12, 0x9d988f);
+  }
+  for (let s = -WORLD; s < WORLD; s += B) {   // the strip between the last road and the sea wall
+    const e = Math.min(s + B, WORLD);
+    flat(-WORLD, s, -HALF, e, 0.06, 0xb3ab99); flat(HALF, s, WORLD, e, 0.06, 0xb3ab99);
+    if (s >= -HALF && e <= HALF) { flat(s, -WORLD, e, -HALF, 0.06, 0xb3ab99); flat(s, HALF, e, WORLD, 0.06, 0xb3ab99); }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  g.setAttribute('aTiles', new THREE.Float32BufferAttribute(tiles, 4)); g.setAttribute('aGlow', new THREE.Float32BufferAttribute(glow, 1)); g.computeVertexNormals(); g.computeBoundingSphere();
+  if (!LOD98.tex) { LOD98.data = new Uint8Array(LOD98.N * LOD98.N * 4); LOD98.tex = new THREE.DataTexture(LOD98.data, LOD98.N, LOD98.N, THREE.RGBAFormat); LOD98.tex.needsUpdate = true; }
+  if (!LOD98.mat) {
+    LOD98.mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0, emissive: 0x000000 });
+    const NN = LOD98.N.toFixed(1);
+    LOD98.mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uTiles = { value: LOD98.tex };
+      sh.vertexShader = `attribute vec4 aTiles;\nattribute float aGlow;\nvarying float vGlow;\nuniform sampler2D uTiles;\nfloat tl99(vec2 t) { return texture2D(uTiles, (t + 0.5) / ${NN}).r; }\n` + sh.vertexShader.replace('#include <fog_vertex>', `#include <fog_vertex>
+        vGlow = aGlow;
+        if (tl99(aTiles.xy) > 0.5 && tl99(aTiles.zy) > 0.5 && tl99(aTiles.xw) > 0.5 && tl99(aTiles.zw) > 0.5) gl_Position = vec4(0.0, 0.0, 2.0, 1.0);   // all of it is drawn in full detail right now`);
+      sh.fragmentShader = 'varying float vGlow;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  totalEmissiveRadiance *= vGlow;   // lit windows: walls only');
+    };
+    LOD98.mat.customProgramCacheKey = () => 'lod99';
+  }
+  if (LOD98.mesh) { scene.remove(LOD98.mesh); LOD98.mesh.geometry.dispose(); }
+  const m = new THREE.Mesh(g, LOD98.mat); m.frustumCulled = false; m.castShadow = false; m.receiveShadow = false; m.userData.lod98 = true; scene.add(m); LOD98.mesh = m;
+  LOD98.ruins = SKYLINE.filter((o) => o.ruin).length; LOD98.built = true;
+};
 const ARM = { truck: null, nextT: 50 };
 const truckRear = (car) => { const fx = Math.sin(car.angle), fz = Math.cos(car.angle), o = car.T.len / 2 + 0.55; return { x: car.x - fx * o, z: car.z - fz * o }; };
 function addTruckDoors(car) {   // two rear doors on hinges, so they can swing open
@@ -29041,7 +29119,7 @@ let lastDraw = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   if (dbgFreeze) { last = now; return; }
-  const cap = !started ? 20 : paused ? 30 : settings.cool97 ? 40 : (QUALITY[settings.gfx].fps || 60);   // build 50: never draw faster than this (a 120 Hz screen was drawing twice as much for nothing, and the menu ran flat out)
+  const cap = !started ? 20 : paused ? 30 : Math.min(settings.cool97 ? 40 : (QUALITY[settings.gfx].fps || 60), battCap99() || 999);   // build 99: lower again when unplugged   // build 50: never draw faster than this (a 120 Hz screen was drawing twice as much for nothing, and the menu ran flat out)
   if (now - lastDraw < 1000 / cap - 1.5) return;
   lastDraw = now;
   const still = started && paused && !mapOpen;   // build 57: the pause menu sits over one still frame (redrawing under the blur, at a resolution that kept changing, made it flicker)
@@ -29083,7 +29161,7 @@ function init() {
   build50Weapons();
   buildCity(); softenIBL(); buildWaterWorld();
   renderMapBase();
-  player = createChar('player', 9, 7.6, { shirt: 0x2b3440, pants: 0x2d3a4f, sleeves: true, shorts: false, shoes: 0x1b1b1b, hair: 'short', hairColor: 0x2a1c12, skin: 0xd9a066, height: 1, build: 1.05, hp: 100, cash: 0, angle: Math.PI / 2 });
+  player = createChar('player', 16, 7.6, { shirt: 0x2b3440, pants: 0x2d3a4f, sleeves: true, shorts: false, shoes: 0x1b1b1b, hair: 'short', hairColor: 0x2a1c12, skin: 0xd9a066, height: 1, build: 1.05, hp: 100, cash: 0, angle: Math.PI / 2 });
   Object.assign(player, { cash: SAVE_OFF ? 3500 : store.get('sprawl.cash', 3500), owned: { fist: true, bat: false, knife: false, pistol: true, shotgun: false, rifle: false, smg: false, sniper: false, rpg: false, revolver: false, ar: false, tknife: false, chainsaw: false, katana: false, machete: false },
     ammo: { pistol: 36, shotgun: 0, rifle: 0, smg: 0, sniper: 0, rpg: 0, bat: 0, knife: 0, revolver: 0, ar: 0, tknife: 0 }, clip: { pistol: 12, shotgun: 0, rifle: 0, smg: 0, sniper: 0, rpg: 0, bat: 0, knife: 0, revolver: 0, ar: 0, tknife: 0 }, grenades: 3, armor: 0, regenT: 0, combatT: 0, aimMode: false, nadeAim: false });
   loadKit();
@@ -29128,7 +29206,7 @@ function init() {
   $('bigmapCv').addEventListener('contextmenu', (e) => mapClick(e, true));
   renderStartKeys();
   // Debug handle for the browser console. game.step(n) advances the simulation n frames.
-  window.game = { B98: { PROF98, LOD98, buildLod98, lodDist98, SI98, SKYG98, get composer() { return composer; }, get sun() { return sun; } }, B97: { PERF97, SC97, makeSC97, corpseGore97, drawDist97 }, CONTRACTS, CONTRACT, acceptContract, B96: { EX96, startSeq96, crewFight96 }, B95: { FLT95, HVA95, standOf95, board95, setupFlight95 }, B94: { PIL94 }, B93: { CK93, camRay93 }, B92: { RAIL92, TR92, RIG92, derail92, addTrailer92, railY92 }, B91: { EV91, startEv91, endEv91, BAR91, rhythm: () => rhythm() }, B90: { ST90, SC90, startStand90, breach90, say90, makeSC90, CONTRACTS, CONTRACT, acceptContract }, B89: { PL89, PUR89, plate89, chopNear89, perimeter89, camSetup89, chopSetup89 }, B88: { INJ88, BLEACH88, treat88, doc88, clean88, wounded88 }, B87: { WEAPONS, IMP87, FIRE87, SHIELD87, fireAt87, ignite87, impHold87, impSpot87, pen87 }, B86: { REC86, onFile86, findDelay86, cases86 }, STATS, CASES, WARRANT, B85: { CK85, AIM85, ck85Restore, safeSpot85, gunImpact85, bombImpact85, shellImpact85, revive85 }, B84: { PADS84, BLOCK84, patrolBlock84, padsSetup84, padOwner84, padHeli84 }, B83: { DISP83, dispatchStart83, nearestPost83, postSpawn83, heliOrigin83 }, B82: { VAULT82, SURF82, GRASS82, RUIN82, ROADS82, surfAt82, mantle82, ruinY82, vaultSetup82 }, B81: { AIR80, RPG80, CKPT80, SEARCH80, jetSpawn80, groundT80, underCover80, descMatch80, ckptTake80, bombBlast80, carGuard80, dropBomb80, armPlane80, updateSearch80, CAMP80: () => CAMP80, ROB80: () => ROB80 }, B79: { step: (n, dt = 1 / 60) => { for (let k = 0; k < n; k++) { update(dt); pressed.clear(); updateCamera(dt); } composer.render(); }, bldPal79, bldGrid79, WIT79, FIND79, wit79Pick, updateWit79, roadNear79, copBld79, copHouse79, victimId79, newsHTML79, CAM79, SUB79, sub79L2W, sub79W2L, subHall79 }, B77: { losClear: (a, b, c, d) => losClear(a, b, c, d), rayObstacles: (a, b, c, d, e, f) => rayObstacles(a, b, c, d, e, f), sleepRayT: (c, a, b, d, e, f) => sleepRayT(c, a, b, d, e, f), onRoofTop: () => onRoofTop(), eForBody, eSpot, carryWin, grassBlocked, POL77, polCount77, ragCeil, nearWin, nearBody, setCam: (y, p) => { camYaw = y; camPitch = p; }, heat: () => heat, stars: () => stars(), damageChar: (c, d, s) => damageChar(c, d, s) }, HAND76, GRAB76, HB, ragSelfTest: () => ({ RS, RS_SEGS }), BLOODT: { addDecal: (...a) => addDecal(...a), addHole: (...a) => addHole(...a), decal: () => decalMesh, wall: () => wallBloodMesh, clearWounds: (c) => clearWounds(c), respawn: () => respawn() }, CQ, FIN, startFin: (T) => startFin(T), cqTarget: () => cqTarget(), startDive: (x, z) => startDive(x, z), parry: (c) => parry(c), npcPunch: (c) => punch(c, WEAPONS[c.weapon], 1), WARDR, SAFEDECO, wardSpot: () => wardSpot(), openWard: (W) => openWard(W), closeWard: () => closeWard(), buildSafeDecor: () => buildSafeDecor(), PAPERS, DORIS, IDC, openPapers: (r) => openPapers(r), dorisTalk: () => dorisTalk(), hankTalk: () => hankTalk(), nearHank: () => nearHank(), nearDoris: () => nearDoris(), payday: () => payday(), DET, COVER, FORGER, detStart: () => detStart(), plantAtScene: (C) => plantAtScene(C), frameSpot: () => frameSpot(), frameHouse: (f) => frameHouse(f), buyIdentity: () => buyIdentity(), rentHouse: (i) => rentHouse(i), applyJob: () => applyJob(), workRest: () => workRest(), coverAction: () => coverAction(), doCover: (a) => doCover(a), sheriffSearch: () => sheriffSearch(), storeOf: () => storeOf(), atWork: () => atWork(), FENCES, SO, MG, FACE, schedMode: (H, h, d) => schedMode(H, h, d), stakeWait: (h) => stakeWait(h), cutPower: (H) => cutPower(H), openMG: (a) => openMG(a), holdAction: () => holdAction(), fenceSell: () => fenceSell(), nearFence: () => nearFence(), sensorAim: () => sensorAim(), NB, SENS, routineMode: (H) => routineMode(H), dateStr: () => dateStr(), hideNear: () => hideNear(), enterHide: (S) => enterHide(S), exitHide: () => exitHide(), countryRoadblock: () => countryRoadblock(), neighbourNoise: (x, z, l) => neighbourNoise(x, z, l), TRACK, VALLEY_RD, LAKE_RD, BACK_RD, roadsideN: () => ROADSIDE_N, COPB, copBranch: (x, z) => copBranch(x, z), IDOORS, homeWay: (c, x, z) => homeWay(c, x, z), spawnSleepers: (H) => spawnSleepers(H), wakeHome: (H) => wakeHome(H), idoorToggle: () => idoorToggle(), sleepK: (H) => sleepK(H), curHome: () => curHome(), WILDA, NPASS, SCOAST, interiorAtf: (x, z) => interiorAt(x, z), HAVEN, HAVEN_ROAD, spawnCop, groundYf: (x, z) => groundY(x, z), terrainHf: (x, z) => terrainH(x, z), RACE64, STATS, PROPS, RESPRAY, OUTFITS, buyProp, startRace, endRace, raceMeet, callLawyer, doRespray, buyOutfit, buyDrink, sleepAt, prompt64, renderPhone: () => renderPhone(), phoneAct: (a, b) => phoneAct(a, b), cp: () => computePrompt(), pois: () => mapPOIs(), NQ, CIVIC, costumeShop: () => costumeShop, seenNow: () => seenNow, deathKind: () => deathKind, seat(car) { const P = player; car.driver = P; car.parked = false; car.ai = null; P.inCar = car; }, MIL, PURSUIT, triggerMilitary, ARREST, CITY63, bustTGet: () => bustT, lostTGet: () => lostT, climbSpot, vaultSpot, hitSkyline, interiorAt, damageHeli, heliRoof, addHeat, starsN: () => stars(), indoorBox, togglePhone, HFIRES, PHONE, PROFILE, PUPS, WARRANT, PRESS, gt, issueWarrant, renderer, scene, obsIn, HEISTS, HEIST, HB, planHeist, HPROPS, CASE, BANK, jewelers, CASES, NCRIME, startNpcCrime, hitReact, findWallCover, shops, settings, ramCabin, sawCut, wallCrash, PAUSEDRAW, PUP, crashFlip, shatterCarGlass, carGeo: carGeometry, binds, pose, seatPuppet, SIT_DRV, dropPuppets,
+  window.game = { B99: { BATT99, battCap99 }, B98: { PROF98, LOD98, buildLod98, lodDist98, SI98, SKYG98, get composer() { return composer; }, get sun() { return sun; } }, B97: { PERF97, SC97, makeSC97, corpseGore97, drawDist97 }, CONTRACTS, CONTRACT, acceptContract, B96: { EX96, startSeq96, crewFight96 }, B95: { FLT95, HVA95, standOf95, board95, setupFlight95 }, B94: { PIL94 }, B93: { CK93, camRay93 }, B92: { RAIL92, TR92, RIG92, derail92, addTrailer92, railY92 }, B91: { EV91, startEv91, endEv91, BAR91, rhythm: () => rhythm() }, B90: { ST90, SC90, startStand90, breach90, say90, makeSC90, CONTRACTS, CONTRACT, acceptContract }, B89: { PL89, PUR89, plate89, chopNear89, perimeter89, camSetup89, chopSetup89 }, B88: { INJ88, BLEACH88, treat88, doc88, clean88, wounded88 }, B87: { WEAPONS, IMP87, FIRE87, SHIELD87, fireAt87, ignite87, impHold87, impSpot87, pen87 }, B86: { REC86, onFile86, findDelay86, cases86 }, STATS, CASES, WARRANT, B85: { CK85, AIM85, ck85Restore, safeSpot85, gunImpact85, bombImpact85, shellImpact85, revive85 }, B84: { PADS84, BLOCK84, patrolBlock84, padsSetup84, padOwner84, padHeli84 }, B83: { DISP83, dispatchStart83, nearestPost83, postSpawn83, heliOrigin83 }, B82: { VAULT82, SURF82, GRASS82, RUIN82, ROADS82, surfAt82, mantle82, ruinY82, vaultSetup82 }, B81: { AIR80, RPG80, CKPT80, SEARCH80, jetSpawn80, groundT80, underCover80, descMatch80, ckptTake80, bombBlast80, carGuard80, dropBomb80, armPlane80, updateSearch80, CAMP80: () => CAMP80, ROB80: () => ROB80 }, B79: { step: (n, dt = 1 / 60) => { for (let k = 0; k < n; k++) { update(dt); pressed.clear(); updateCamera(dt); } composer.render(); }, bldPal79, bldGrid79, WIT79, FIND79, wit79Pick, updateWit79, roadNear79, copBld79, copHouse79, victimId79, newsHTML79, CAM79, SUB79, sub79L2W, sub79W2L, subHall79 }, B77: { losClear: (a, b, c, d) => losClear(a, b, c, d), rayObstacles: (a, b, c, d, e, f) => rayObstacles(a, b, c, d, e, f), sleepRayT: (c, a, b, d, e, f) => sleepRayT(c, a, b, d, e, f), onRoofTop: () => onRoofTop(), eForBody, eSpot, carryWin, grassBlocked, POL77, polCount77, ragCeil, nearWin, nearBody, setCam: (y, p) => { camYaw = y; camPitch = p; }, heat: () => heat, stars: () => stars(), damageChar: (c, d, s) => damageChar(c, d, s) }, HAND76, GRAB76, HB, ragSelfTest: () => ({ RS, RS_SEGS }), BLOODT: { addDecal: (...a) => addDecal(...a), addHole: (...a) => addHole(...a), decal: () => decalMesh, wall: () => wallBloodMesh, clearWounds: (c) => clearWounds(c), respawn: () => respawn() }, CQ, FIN, startFin: (T) => startFin(T), cqTarget: () => cqTarget(), startDive: (x, z) => startDive(x, z), parry: (c) => parry(c), npcPunch: (c) => punch(c, WEAPONS[c.weapon], 1), WARDR, SAFEDECO, wardSpot: () => wardSpot(), openWard: (W) => openWard(W), closeWard: () => closeWard(), buildSafeDecor: () => buildSafeDecor(), PAPERS, DORIS, IDC, openPapers: (r) => openPapers(r), dorisTalk: () => dorisTalk(), hankTalk: () => hankTalk(), nearHank: () => nearHank(), nearDoris: () => nearDoris(), payday: () => payday(), DET, COVER, FORGER, detStart: () => detStart(), plantAtScene: (C) => plantAtScene(C), frameSpot: () => frameSpot(), frameHouse: (f) => frameHouse(f), buyIdentity: () => buyIdentity(), rentHouse: (i) => rentHouse(i), applyJob: () => applyJob(), workRest: () => workRest(), coverAction: () => coverAction(), doCover: (a) => doCover(a), sheriffSearch: () => sheriffSearch(), storeOf: () => storeOf(), atWork: () => atWork(), FENCES, SO, MG, FACE, schedMode: (H, h, d) => schedMode(H, h, d), stakeWait: (h) => stakeWait(h), cutPower: (H) => cutPower(H), openMG: (a) => openMG(a), holdAction: () => holdAction(), fenceSell: () => fenceSell(), nearFence: () => nearFence(), sensorAim: () => sensorAim(), NB, SENS, routineMode: (H) => routineMode(H), dateStr: () => dateStr(), hideNear: () => hideNear(), enterHide: (S) => enterHide(S), exitHide: () => exitHide(), countryRoadblock: () => countryRoadblock(), neighbourNoise: (x, z, l) => neighbourNoise(x, z, l), TRACK, VALLEY_RD, LAKE_RD, BACK_RD, roadsideN: () => ROADSIDE_N, COPB, copBranch: (x, z) => copBranch(x, z), IDOORS, homeWay: (c, x, z) => homeWay(c, x, z), spawnSleepers: (H) => spawnSleepers(H), wakeHome: (H) => wakeHome(H), idoorToggle: () => idoorToggle(), sleepK: (H) => sleepK(H), curHome: () => curHome(), WILDA, NPASS, SCOAST, interiorAtf: (x, z) => interiorAt(x, z), HAVEN, HAVEN_ROAD, spawnCop, groundYf: (x, z) => groundY(x, z), terrainHf: (x, z) => terrainH(x, z), RACE64, STATS, PROPS, RESPRAY, OUTFITS, buyProp, startRace, endRace, raceMeet, callLawyer, doRespray, buyOutfit, buyDrink, sleepAt, prompt64, renderPhone: () => renderPhone(), phoneAct: (a, b) => phoneAct(a, b), cp: () => computePrompt(), pois: () => mapPOIs(), NQ, CIVIC, costumeShop: () => costumeShop, seenNow: () => seenNow, deathKind: () => deathKind, seat(car) { const P = player; car.driver = P; car.parked = false; car.ai = null; P.inCar = car; }, MIL, PURSUIT, triggerMilitary, ARREST, CITY63, bustTGet: () => bustT, lostTGet: () => lostT, climbSpot, vaultSpot, hitSkyline, interiorAt, damageHeli, heliRoof, addHeat, starsN: () => stars(), indoorBox, togglePhone, HFIRES, PHONE, PROFILE, PUPS, WARRANT, PRESS, gt, issueWarrant, renderer, scene, obsIn, HEISTS, HEIST, HB, planHeist, HPROPS, CASE, BANK, jewelers, CASES, NCRIME, startNpcCrime, hitReact, findWallCover, shops, settings, ramCabin, sawCut, wallCrash, PAUSEDRAW, PUP, crashFlip, shatterCarGlass, carGeo: carGeometry, binds, pose, seatPuppet, SIT_DRV, dropPuppets,
     player: () => player, skyscrapers, nearElevator, rideElevator, nearDoor, setDoor, chars, cars, shops, landmarks, keys, mouse, get stars() { return stars(); }, addHeat,
     setHeat(v) { heat = v; lostT = 0; }, setFP(v) { fpMode = v; }, weather, setWeather(st) { weather.t = 0; const r = Math.random; Math.random = () => (st === 'rain' ? 0.1 : st === 'overcast' ? 0.5 : 0.9); updateWeather(0); Math.random = r; weather.cloud = weather.target.cloud; weather.rain = weather.target.rain; weather.wet = st === 'rain' ? 1 : 0; }, jewelers, homes, get costumeShop() { return costumeShop; }, setMask, buyMask, interiorAt, smashCase, nearCase, get maskedCrime() { return maskedCrime; }, MT, HWY, LAKES, MBASE, AIRPORT, ragdolls, mtH, damageChar, explodeAt, ragStart, get airTraffic() { return airTraffic; }, planes, AIR, BASE, RUNWAY, CAUSE, POIS, SPOTS, dogs, enterPlane, exitPlane, get baseAlarm() { return baseAlarm; }, regionOf, SKYLINE, get planeLock() { return planeLock; }, corpseInFront, corpseHit, ISL, BRIDGE, LOOP, islandH, onIsland, spawnIslandPed, spawnIslandCar, terrainH, groundY, incidents, get ambulance() { return ambulance; }, makeInjured, spawnAmbulance, RAMPS, PIER, get copProvokedT() { return copProvokedT; }, copAttackers, tryEnterCar, get para() { return para; }, binds, settings, bars, interiors, rockets, get lockT() { return lockT; }, get gameHour() { return gameHour; }, setHour(h) { gameHour = h; }, toggleMap, get wheelOpen() { return wheelOpen; }, get job() { return job; }, startJob, offerJob, get seenNow() { return seenNow; }, spawnRoadblock, barrels, grenades, get shopOpen() { return shopOpen; }, get deathKind() { return deathKind; }, get heli() { return heli; },
     ARM, spawnArmored, armoredStop, TGT, targetInfo, createCar, exitCar, TAXI, WARDEN, COPS, spikes, layStrip, FENCE, fenceSpot, fenceSell, BANK, setWaypoint(x, z) { waypoint = x == null ? null : { x, z }; }, spawnTraffic,
