@@ -338,7 +338,7 @@
 
 <div id="start" class="screen">
   <h1>SPRAWL CITY</h1>
-  <div class="sub">OPEN-WORLD CRIME SANDBOX · SINGLE PLAYER · BUILD 99 (Nov 24)</div>
+  <div class="sub">OPEN-WORLD CRIME SANDBOX · SINGLE PLAYER · BUILD 100 (Nov 24)</div>
   <div class="keys">
     <div><kbd>WASD</kbd> move · <kbd>Shift</kbd> sprint</div><div><kbd>Mouse</kbd> look (captured while playing)</div>
     <div><kbd>LMB</kbd> shoot / punch · <kbd>RMB</kbd> aim</div><div><kbd>V</kbd> kick · <kbd>R</kbd> reload</div>
@@ -28211,6 +28211,7 @@ function computePrompt() {
   if (holdUpTarget()) return `<kbd>${K('interact')}</kbd> Hold up`;
   return '';
 }
+let promptT100 = 0, promptK100 = -1, promptV100 = '';
 function updateHUD(dt) {
   const P = player, s = stars();
   setHud('s', (v) => starEls.forEach((e, i) => e.classList.toggle('on', i >= 5 - v)), s);
@@ -28250,7 +28251,12 @@ function updateHUD(dt) {
     setHud('carHp', (v) => (hud.car.style.width = v + '%'), Math.round(Math.max(0, P.inPlane.hp) / P.inPlane.maxHp * 100));
     setHud('kmh', (v) => (hud.speedV.textContent = v), String(Math.round(P.inPlane.speed * 2.237)));
   }
-  setHud('prompt', (v) => { hud.prompt.innerHTML = v; hud.prompt.style.display = v ? 'block' : 'none'; }, computePrompt());
+  // build 100: working out the prompt scans everything near you (0.6 ms, nearly all of the HUD's time), so it's done
+  // ten times a second, and straight away whenever you get in or out of something or go down
+  const pk = (P.inCar ? 1 : 0) + (P.inPlane ? 2 : 0) + (P.alive ? 4 : 0) + (deathKind ? 8 : 0) + (robbery ? 16 : 0);
+  promptT100 -= dt;
+  if (promptT100 <= 0 || pk !== promptK100) { promptT100 = 0.1; promptK100 = pk; promptV100 = computePrompt(); }
+  setHud('prompt', (v) => { hud.prompt.innerHTML = v; hud.prompt.style.display = v ? 'block' : 'none'; }, promptV100);
   setHud('robOn', (v) => (hud.rob.style.display = v ? 'block' : 'none'), !!robbery);
   if (robbery) { setHud('robName', (v) => (hud.robLabel.textContent = v), `ROBBING ${robbery.shop.name}`); hud.robFill.style.width = (robbery.t / CFG.ROB_TIME * 100) + '%'; }
   const lowPulse = P.alive && P.hp < 30 ? 0.25 + Math.sin(clock * 5) * 0.1 : 0;
@@ -28295,6 +28301,7 @@ const composer = new EffectComposer(renderer, _rt), renderPass = new RenderPass(
 const gtao = new GTAOPass(scene, camera, innerWidth, innerHeight);
 gtao.updateGtaoMaterial({ radius: 1.6, distanceExponent: 1.4, thickness: 2, scale: 1.1, samples: 12 }); gtao.blendIntensity = 0.85;
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.2, 0.5, 1.0);
+{ const bs = bloom.setSize.bind(bloom); bloom.setSize = (w, h) => bs(w / 2, h / 2); }   // build 100: a quarter-res glow looks the same at this strength and costs a quarter as much (it was a fifth of the GPU's frame)
 const grade = new ShaderPass(GradeShader);
 composer.addPass(renderPass); composer.addPass(gtao); composer.addPass(bloom); composer.addPass(grade); composer.addPass(new OutputPass());
 let gfxPR = Math.min(devicePixelRatio, QUALITY[settings.gfx].pr), _fpsAcc = 0, _fpsN = 0, _fpsT = 0;
@@ -29147,11 +29154,19 @@ function frame(now) {
 }
 
 let shadowTick = 0;
-const _shPos = new THREE.Vector3();
+const _shPos = new THREE.Vector3(), _shTgt = new THREE.Vector3(), _shDir = new THREE.Vector3(), _shD = new THREE.Vector3();
 function shadowStep() {   // static city shadows don't need a redraw every frame, but they must the moment the shadow camera moves (that was the floor 'glitching' as you walked)
   renderer.shadowMap.autoUpdate = false;
-  const moved = _shPos.distanceToSquared(sun.position) > 1e-6; if (moved) _shPos.copy(sun.position);
-  if (moved || (shadowTick = (shadowTick + 1) % 3) === 0) renderer.shadowMap.needsUpdate = true;
+  // build 100: the sun creeps a hair every frame with the time of day, and that counted as 'moved', so the shadow map
+  // was redrawn every single frame (about a quarter of the GPU's work). Now only a real shift does it: the shadow
+  // camera stepping to the next texel, or the sun turning more than a tenth of a degree since the last redraw
+  _shD.subVectors(sun.position, sun.target.position).normalize();
+  const recentred = _shTgt.distanceToSquared(sun.target.position) > 1e-6;
+  const turned = _shD.dot(_shDir) < 0.9999985;
+  const P = player, fast = P && ((P.inCar && Math.abs(P.inCar.vF) > 4) || P.inPlane || (!P.inCar && Math.hypot(P.mvx || 0, P.mvz || 0) > 3));   // quick movers' shadows mustn't trail
+  if (recentred || turned || fast || (shadowTick = (shadowTick + 1) % 2) === 0) {
+    renderer.shadowMap.needsUpdate = true; _shTgt.copy(sun.target.position); _shDir.copy(_shD); _shPos.copy(sun.position);
+  }
 }
 function softenIBL() {   // rough streets and walls take less of the blue sky light, so shade reads grey rather than navy
   const seen = new Set();

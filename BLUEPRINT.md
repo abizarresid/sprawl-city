@@ -43,7 +43,18 @@ Then open <http://localhost:8123>, or <http://localhost:8123/?mute> to start wit
 
 ---
 
-## 2zz17. Latest update (build 99): a battery saver that switches itself on, and fixes from a glitch-hunt playtest
+## 2zz18. Latest update (build 100): the shadow map was redrawn every frame, plus cheaper glow and HUD prompts
+
+A profiling pass on an M5 (10 cores): game logic about 4 ms per frame and draw preparation about 4.6 ms, both on the page's one thread, and about 9 ms of GPU time in a 1331×998 window. Spreading the logic over Web Workers would save at most 2–3 ms of main-thread time and means untangling systems that write straight into the scene, so this build cuts the GPU work instead.
+
+- **Shadows (`shadowStep`):** the sun moves a hair every frame with the time of day, and that counted as "moved", so the every-third-frame shadow saving never applied. The shadow map was redrawn every frame (about 2.6 ms of GPU). Now it's redrawn when the shadow camera steps to a new texel, when the sun has turned more than about 0.1° since the last redraw, while the player runs (over 3 m/s), drives (over 4 m/s) or flies, and otherwise every second frame.
+- **Glow (`bloom.setSize`):** the bloom chain runs at a quarter of the screen resolution instead of half. Day scenes are pixel-identical; at night 0.4% of pixels differ, around lights.
+- **HUD prompt (`computePrompt`):** it scanned everything nearby every frame (0.64 ms, nearly all of `updateHUD`). It's now worked out 10 times a second, and straight away when you get in or out of a vehicle or plane, die, or start a robbery. `updateHUD` went from 0.67 ms to 0.14 ms.
+- **Looked at, not changed:** the 0.9 ms under `updateHeists` is about 70 small systems chained build after build (doors, homes, burglary, sleepers…), none over 0.1 ms. Many read one-frame key presses, so running them at a lower rate isn't safe.
+
+**Measured:** median GPU time per frame 8.55 → 7.05 ms, alternating old and new behaviour five times each on the same page.
+
+## 2zz17. Update (build 99): a battery saver that switches itself on, and fixes from a glitch-hunt playtest
 
 **Battery saver (`BATT99`):** when the laptop is unplugged, the frame rate drops to the "When unplugged" setting: 30 fps, 40 fps (the default) or no limit. It shows a short notice when it kicks in. It uses `navigator.getBattery()`, so it works in Chrome and Edge. Safari doesn't report the battery; the settings row says so and points to the 40 fps checkbox. The setting is wired once the page has loaded (`wireBatt99`), so it also works from the start screen.
 
